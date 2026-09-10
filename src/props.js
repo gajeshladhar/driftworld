@@ -1,7 +1,7 @@
 // ── Props: instanced scenery scattered by land-cover class ──────────────────
 import * as THREE from 'three';
-import { TILE_PX, ZOOM, MESH_SEG, VERTICAL_EXAGGERATION, CLASS_ORDER, PROPS } from './config.js';
-import { tileBBoxMerc, tileSpanMerc } from './geo.js';
+import { TILE_PX, ZOOM, MESH_SEG, VERTICAL_EXAGGERATION, CLASS_ORDER, PROPS } from './config.js?v=8eaf432e';
+import { tileBBoxMerc, tileSpanMerc } from './geo.js?v=8eaf432e';
 
 const IDX = Object.fromEntries(CLASS_ORDER.map((k, i) => [k, i]));
 const UP = new THREE.Vector3(0, 1, 0);

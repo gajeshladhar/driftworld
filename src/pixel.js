@@ -1,6 +1,6 @@
 // ── Pixel post-process: render small, upscale with nearest neighbour ─────────
 import * as THREE from 'three';
-import { PIXEL_SCALE } from './config.js';
+import { PIXEL_SCALE } from './config.js?v=8eaf432e';
 
 export class PixelPass {
   constructor(renderer) {

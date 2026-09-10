@@ -1,6 +1,6 @@
 // ── Navigation: waypoint buoys with visible light columns ───────────────────
 import * as THREE from 'three';
-import { NAV, VERTICAL_EXAGGERATION } from './config.js';
+import { NAV, VERTICAL_EXAGGERATION } from './config.js?v=8eaf432e';
 
 const COL_A = 0xff7a3d;   // buoy
 const COL_B = 0xffd24a;   // current target

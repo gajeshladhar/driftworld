@@ -22,6 +22,15 @@ Lysefjord and Lago di Como in one continuous take (MP4, 1920x1080)
 </tr>
 </table>
 
+## Deploying
+
+Run `python bump.py` before pushing. GitHub Pages serves assets with
+`Cache-Control: max-age=600` and gives you no way to change it, so without a
+version stamp a deploy leaves browsers running a mix of old and new modules for
+ten minutes - which looks exactly like a feature silently not working. Relative
+imports do not inherit the entry module's query string, so the stamp has to go
+on every specifier, not just `index.html`.
+
 ## Hosting it
 
 It is a static site — HTML, ES modules and one vendored copy of Three.js. Drop

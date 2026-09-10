@@ -2,7 +2,7 @@
 // A quantised gradient rather than a photoreal model: smooth atmospheric
 // scattering fights the pixel-art read, hard bands reinforce it.
 import * as THREE from 'three';
-import { SKY } from './config.js';
+import { SKY } from './config.js?v=8eaf432e';
 
 export const HORIZON = new THREE.Color(SKY.horizon);
 

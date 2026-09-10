@@ -7,8 +7,8 @@
 // all — it comes back as #000000 nodata. Snapping that to the nearest palette
 // entry would paint the Pacific dark green, so nodata is treated as ocean here.
 import * as THREE from 'three';
-import { GLOBE, CLASSES, CLASS_ORDER } from './config.js';
-import { tileBBoxMerc, mercToLonLat } from './geo.js';
+import { GLOBE, CLASSES, CLASS_ORDER } from './config.js?v=8eaf432e';
+import { tileBBoxMerc, mercToLonLat } from './geo.js?v=8eaf432e';
 
 const SRC = CLASS_ORDER.map((k) => CLASSES[k].rgb.map((v) => v / 255));
 const ART = CLASS_ORDER.map((k) => CLASSES[k].art.map((v) => v / 255));

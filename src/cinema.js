@@ -3,8 +3,8 @@
 // Only the WebGL canvas is captured, so the DOM HUD is hidden for the take and
 // the world's own place labels (which are sprites) still appear.
 import * as THREE from 'three';
-import { VERTICAL_EXAGGERATION, REEL } from './config.js';
-import { drawHudOverlay } from './hudcanvas.js';
+import { VERTICAL_EXAGGERATION, REEL } from './config.js?v=8eaf432e';
+import { drawHudOverlay } from './hudcanvas.js?v=8eaf432e';
 
 const angDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 

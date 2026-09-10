@@ -1,8 +1,8 @@
 // ── Terrain: DEM-displaced tile meshes textured with land cover ──────────────
 import * as THREE from 'three';
-import { ZOOM, MESH_SEG, LOAD_RADIUS, UNLOAD_RADIUS, VERTICAL_EXAGGERATION, CLASSES } from './config.js';
-import { tileBBoxMerc, tileSpanMerc, mercToTile } from './geo.js';
-import { buildProps, disposeProps } from './props.js';
+import { ZOOM, MESH_SEG, LOAD_RADIUS, UNLOAD_RADIUS, VERTICAL_EXAGGERATION, CLASSES } from './config.js?v=8eaf432e';
+import { tileBBoxMerc, tileSpanMerc, mercToTile } from './geo.js?v=8eaf432e';
+import { buildProps, disposeProps } from './props.js?v=8eaf432e';
 
 const ORDER = ['WATER','TREES','FLOODED','CROPS','BUILT','BARE','SNOW','CLOUDS','RANGELAND'];
 const SRC = ORDER.map(k => CLASSES[k].rgb.map(v => v / 255));

@@ -4,8 +4,8 @@
 // much wider, much cheaper shell underneath it: five z9 tiles span more ground
 // than two hundred z13 tiles and arrive in a fraction of the time.
 import * as THREE from 'three';
-import { BACKDROP, VERTICAL_EXAGGERATION, TILE_PX } from './config.js';
-import { tileBBoxMerc, tileSpanMerc, mercToTile } from './geo.js';
+import { BACKDROP, VERTICAL_EXAGGERATION, TILE_PX } from './config.js?v=8eaf432e';
+import { tileBBoxMerc, tileSpanMerc, mercToTile } from './geo.js?v=8eaf432e';
 
 export class Backdrop {
   constructor(scene, store, frame, baseMaterial) {

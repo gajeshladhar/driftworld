@@ -5,8 +5,8 @@
 // Both are unauthenticated and send permissive CORS. Overpass is a shared
 // community service, so queries are debounced hard and failures are silent.
 import * as THREE from 'three';
-import { VERTICAL_EXAGGERATION, PLACES } from './config.js';
-import { lonLatToMerc, mercToLonLat } from './geo.js';
+import { VERTICAL_EXAGGERATION, PLACES } from './config.js?v=8eaf432e';
+import { lonLatToMerc, mercToLonLat } from './geo.js?v=8eaf432e';
 
 const GEOCODE = 'https://api.bigdatacloud.net/data/reverse-geocode-client';
 const OVERPASS = 'https://overpass-api.de/api/interpreter';
