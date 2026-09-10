@@ -1,21 +1,21 @@
 // ── Driftworld · main loop ──────────────────────────────────────────────────
 import * as THREE from 'three';
-import { LOCATIONS, ZOOM, CLASSES, CLASS_ORDER, BOAT, SKY, SHIP, ATMOSPHERES, RUN, GLOBE } from './config.js?v=8eaf432e';
-import { makeFrame, lonLatToMerc, mercToLonLat, mercToTile } from './geo.js?v=8eaf432e';
-import { TileStore } from './tiles.js?v=8eaf432e';
-import { Terrain } from './terrain.js?v=8eaf432e';
-import { Player } from './player.js?v=8eaf432e';
-import { PixelPass } from './pixel.js?v=8eaf432e';
-import { makeSky, HORIZON } from './sky.js?v=8eaf432e';
-import { makeShip, updateShip } from './ship.js?v=8eaf432e';
-import { Minimap } from './minimap.js?v=8eaf432e';
-import { Nav } from './nav.js?v=8eaf432e';
-import { Run } from './objectives.js?v=8eaf432e';
-import { Places } from './places.js?v=8eaf432e';
-import { Cinema } from './cinema.js?v=8eaf432e';
-import { disposeProps } from './props.js?v=8eaf432e';
-import { Backdrop } from './backdrop.js?v=8eaf432e';
-import { Globe } from './globe.js?v=8eaf432e';
+import { LOCATIONS, ZOOM, CLASSES, CLASS_ORDER, BOAT, SKY, SHIP, ATMOSPHERES, RUN, GLOBE } from './config.js';
+import { makeFrame, lonLatToMerc, mercToLonLat, mercToTile } from './geo.js';
+import { TileStore } from './tiles.js';
+import { Terrain } from './terrain.js';
+import { Player } from './player.js';
+import { PixelPass } from './pixel.js';
+import { makeSky, HORIZON } from './sky.js';
+import { makeShip, updateShip } from './ship.js';
+import { Minimap } from './minimap.js';
+import { Nav } from './nav.js';
+import { Run } from './objectives.js';
+import { Places } from './places.js';
+import { Cinema } from './cinema.js';
+import { disposeProps } from './props.js';
+import { Backdrop } from './backdrop.js';
+import { Globe } from './globe.js';
 
 const $ = (id) => document.getElementById(id);
 

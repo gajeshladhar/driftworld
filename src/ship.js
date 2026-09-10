@@ -3,7 +3,7 @@
 // delta silhouette, cyan running lights forward vs magenta thrust aft, and a
 // forward-pointing chevron on the hover pad below.
 import * as THREE from 'three';
-import { SHIP } from './config.js?v=8eaf432e';
+import { SHIP } from './config.js';
 
 const glow = (hex, opacity = 1) => new THREE.MeshBasicMaterial({
   color: hex, transparent: opacity < 1, opacity,

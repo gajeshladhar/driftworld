@@ -1,6 +1,6 @@
 // ── Minimap: north-up land-cover map assembled from tile thumbnails ─────────
-import { ZOOM, MINIMAP } from './config.js?v=8eaf432e';
-import { tileBBoxMerc } from './geo.js?v=8eaf432e';
+import { ZOOM, MINIMAP } from './config.js';
+import { tileBBoxMerc } from './geo.js';
 
 export class Minimap {
   constructor(canvas, store, frame) {

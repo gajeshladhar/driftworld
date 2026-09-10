@@ -1,7 +1,7 @@
 // ── Tile store: streams LULC + DEM, decodes to samplable global grids ────────
 import * as THREE from 'three';
-import { LULC_SERVICE, DEM_URL, TILE_PX, ZOOM, MAX_INFLIGHT, CLASSES, CLASS_ORDER, MINIMAP } from './config.js?v=8eaf432e';
-import { tileBBoxMerc, tileSpanMerc, MERC_R } from './geo.js?v=8eaf432e';
+import { LULC_SERVICE, DEM_URL, TILE_PX, ZOOM, MAX_INFLIGHT, CLASSES, CLASS_ORDER, MINIMAP } from './config.js';
+import { tileBBoxMerc, tileSpanMerc, MERC_R } from './geo.js';
 
 const key = (x, y, z) => `${z}/${x}/${y}`;
 

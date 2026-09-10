@@ -5,7 +5,7 @@
 // of land cover around them, which makes the real classification data the
 // thing the player is actually reading — a beacon in a fjord mouth touching
 // water, trees, snow and bare rock is worth far more than one in open sea.
-import { RUN, CLASS_ORDER, CLASSES, BOAT, FLY, VERTICAL_EXAGGERATION } from './config.js?v=8eaf432e';
+import { RUN, CLASS_ORDER, CLASSES, BOAT, FLY, VERTICAL_EXAGGERATION } from './config.js';
 
 const NAME_TO_KEY = Object.fromEntries(CLASS_ORDER.map((k) => [CLASSES[k].name, k]));
 

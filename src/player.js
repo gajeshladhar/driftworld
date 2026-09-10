@@ -1,5 +1,5 @@
 // ── Player: speedboat constrained to the Water class, plus a free-fly mode ───
-import { BOAT, FLY, VERTICAL_EXAGGERATION } from './config.js?v=8eaf432e';
+import { BOAT, FLY, VERTICAL_EXAGGERATION } from './config.js';
 
 const HALF_BEAM = 5;   // metres either side of the keel used for hull clearance
 
