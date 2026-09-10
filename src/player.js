@@ -2,7 +2,7 @@
 // There is no surface mode and no water constraint any more. Water is just
 // another land-cover class you pass over; the only thing that stops you is
 // hitting something.
-import { FLY, RUN, VERTICAL_EXAGGERATION, WEATHER } from './config.js?v=d8439539';
+import { FLY, RUN, VERTICAL_EXAGGERATION, WEATHER } from './config.js?v=cc9cefc5';
 
 export class Player {
   constructor(store, frame, mx, my) {

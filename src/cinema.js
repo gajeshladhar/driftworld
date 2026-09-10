@@ -3,8 +3,8 @@
 // Only the WebGL canvas is captured, so the DOM HUD is hidden for the take and
 // the world's own place labels (which are sprites) still appear.
 import * as THREE from 'three';
-import { VERTICAL_EXAGGERATION, REEL } from './config.js?v=d8439539';
-import { drawHudOverlay } from './hudcanvas.js?v=d8439539';
+import { VERTICAL_EXAGGERATION, REEL } from './config.js?v=cc9cefc5';
+import { drawHudOverlay } from './hudcanvas.js?v=cc9cefc5';
 
 const angDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 
@@ -85,22 +85,6 @@ export class Cinema {
       if (score < bestScore) { bestScore = score; best = h; }
     }
     return best;
-  }
-
-  /** Highest obstacle top within a couple of kilometres, in world units. */
-  _terrainCeiling() {
-    const p = this.game.player, frame = this.game.frame;
-    let m = 0;
-    for (const r of [0, 1300, 2600]) {
-      const n = r ? 8 : 1;
-      for (let i = 0; i < n; i++) {
-        const a = (i / n) * Math.PI * 2;
-        const top = p.obstacleTop(p.mx + (Math.cos(a) * r) / frame.k,
-                                  p.my + (Math.sin(a) * r) / frame.k);
-        if (top > m) m = top;
-      }
-    }
-    return m;
   }
 
   _drive(dt) {

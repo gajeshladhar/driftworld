@@ -2,7 +2,7 @@
 // Open-Meteo, no key, CORS-clean. Two endpoints: the land forecast always
 // answers, the marine one only has an opinion near coasts — inland it returns
 // nothing, which is not an error and must not blank the panel.
-import { WEATHER } from './config.js?v=d8439539';
+import { WEATHER } from './config.js?v=cc9cefc5';
 
 const FORECAST = 'https://api.open-meteo.com/v1/forecast';
 const MARINE = 'https://marine-api.open-meteo.com/v1/marine';

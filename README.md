@@ -76,10 +76,10 @@ hitting something, and the terrain, the forest canopy and the city blocks are
 all real. Every impact costs one of nine lives; life cells drift in open air
 along the route to give one back.
 
-You are also hunted. Jets come at you head-on and fire homing missiles, and a
-missile costs a life too. A missile is slower than the craft at full boost and
-turns wider than it does, so you can outrun one or break across its nose - but
-not while threading a valley. `F` shoots back; two hits kill a jet.
+You are also hunted. Jets close from behind and fire homing missiles, and a
+missile costs a life too. A missile is faster than the craft can ever fly, so
+running is pointless - but its turn radius is wider than yours, so breaking
+hard across its nose makes it overshoot. `F` shoots back; two hits kill a jet.
 
 ## Controls
 
@@ -189,13 +189,11 @@ that draws the world also decides what you can hit. Collision samples under the
 nose as well as the hull, because at 200 m/s the craft covers its own length
 between frames and a centre-only test flies straight through ridge lines.
 
-**The missile fight is two numbers.** Turn radius is speed over turn rate: at
-470 m/s and 0.55 rad/s a missile needs ~855 m against the craft's ~700 m, so you
-out-turn it, and 470 m/s is below the craft's boosted 945, so you can also
-simply run. Both escapes have to exist or the weapon is just a tax. An earlier
-version steered by lerping toward the target, which turns *fastest* when the
-error is largest - it whipped round and beat any break. It is a hard rate limit
-now, capped at turnRate radians per second.
+**The missile fight is one number.** Turn radius is speed over turn rate, so
+the missile's 880 m/s at 0.9 rad/s gives ~980 m against the craft's ~700 m: you
+out-turn it, and that is the entire counter. The first version steered by
+lerping toward the target, which turns *fastest* when the error is largest -
+the missile whipped round and beat any break. It is a hard rate limit now.
 
 **Weather is real, and it drives the world rather than a readout.** Live wave
 height and period set the water shader's amplitude and speed, cloud cover
