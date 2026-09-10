@@ -17,6 +17,8 @@
   canvas#gl{display:block;width:100vw;height:100vh}
   .hidden{display:none !important}
   .cinema-hidden{display:none !important}
+  .globe-hidden #compasswrap,.globe-hidden #mapwrap,.globe-hidden #legend,
+  .globe-hidden #mission,.globe-hidden #tarrow{display:none !important}
 
   /* corner-bracket frame shared by every panel */
   .panel{position:absolute;background:var(--panel);border:1px solid var(--edge);
@@ -229,7 +231,7 @@
     <b>W</b>/<b>&uarr;</b> thrust &nbsp; <b>S</b> brake<br>
     <b>A/D</b> steer &nbsp; <b>Shift</b> boost<br>
     <b>V</b> flight &nbsp; <b>Space</b> climb<br>
-    <b>T</b> sky &nbsp; <b>M</b> chart &nbsp; <b>G</b> unstick
+    <b>T</b> sky &nbsp; <b>E</b> orbit &nbsp; <b>M</b> chart &nbsp; <b>G</b> unstick
   </div>
 
   <div id="toasts"></div>

@@ -59,6 +59,7 @@ Query parameters:
 | `?auto=1` | launch at a preset without clicking |
 | `?cinema=30` | fly a scripted 30 s take and record it |
 | `?cinema=13&reel=1&hud=1` | showreel across every REEL location, HUD included |
+| `?globe=1` | open straight into the orbit view |
 
 ## Controls
 
@@ -71,6 +72,7 @@ Query parameters:
 | `V` | toggle cruise / flight |
 | `Space` or `R` | climb (flight, no ceiling) |
 | `Ctrl` or `F` | descend |
+| `E` | orbit view - the whole Earth, spin it, drop back in anywhere |
 | `M` | toggle chart |
 | `G` | teleport to nearest water if stuck |
 | `T` | cycle time of day |
@@ -160,6 +162,21 @@ floor, and every failure is silent. Labels draw with `depthTest: false` - seeing
 that a town sits behind the ridge ahead is the entire point - with only the
 nearest dozen shown, ranked so a city outranks a nearer hamlet.
 
+**Resolution follows altitude.** The detail grid stays at zoom 13 because
+collision and scenery need 10 m land cover, but 7x7 of those tiles cannot reach
+the horizon from altitude. A coarser shell streams underneath it, dropping one
+zoom level per doubling of height - five z9 tiles span more ground than two
+hundred z13 tiles and arrive far faster. Climb past 26 km and the view pulls
+back to the whole planet.
+
+**The globe is a separate scene, and open ocean is not in the data.** The
+playable world is a flat local tangent plane, so orbit is its own scene with
+z3 tiles wrapped onto a sphere. At that zoom roughly 70% of a tile is `#000000`:
+Sentinel-2 classifies land, and has no opinion about open sea. The ground
+shader snaps unknown colours to the nearest palette entry, and black is nearest
+to Trees - which would paint the Pacific dark green - so the globe shader
+detects nodata explicitly and renders it as ocean.
+
 **Crack-free tile edges.** Every DEM lookup goes through global mercator pixel
 coordinates rather than per-tile UVs, so neighbouring meshes compute identical
 heights on shared edges. Tiles built before their neighbours arrived are marked
@@ -178,6 +195,8 @@ dirty and rebuilt.
     src/ship.js     alien craft, full-res second pass
     src/props.js    instanced trees, buildings, rocks by class
     src/places.js   reverse geocode + OSM place labels
+    src/backdrop.js coarse distant terrain, zoom chosen by altitude
+    src/globe.js    orbit view: low-zoom tiles wrapped on a sphere
     src/objectives.js  survey run: energy, scoring, chains, ranks
     src/pixel.js    low-res render target + nearest upscale
     src/main.js     loop, camera, HUD

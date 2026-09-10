@@ -30,6 +30,8 @@ export class Cinema {
     this.withHud = withHud;
     this.reel = reel;         // run every REEL location in one continuous take
     this.segIdx = 0;
+    this.stills = new URLSearchParams(location.search).get('stills') === '1';
+    this.fps = parseInt(new URLSearchParams(location.search).get('fps'), 10) || 24;
     // On a reel each segment is short, and the low passes over water are the
     // strongest shots, so spend most of the time there and only lift at the end.
     this.phaseA = reel ? 0.60 : 0.37;
@@ -205,10 +207,14 @@ export class Cinema {
       this.out.width = gl.width;
       this.out.height = gl.height;
       this.outCtx = this.out.getContext('2d');
-      stream = this.out.captureStream(30);
+      // The render loop tops out near 28 Hz here, so asking for 30 fps means a
+      // missed frame roughly every ten — and uneven spacing is what reads as
+      // judder, far more than a lower constant rate does. 24 fps is inside the
+      // budget, so every frame lands on time.
+      stream = this.out.captureStream(this.fps);
     }
     this.source = this.out ? 'hud' : 'clean';
-    if (!stream) stream = gl.captureStream(30);
+    if (!stream) stream = gl.captureStream(this.fps);
     // Flat-shaded terrain and a static HUD compress well, so a tab capture
     // does not need the headroom a detailed scene would.
     const bitrate = this.withHud ? 6_200_000 : 12_000_000;
@@ -218,7 +224,11 @@ export class Cinema {
     // Pull stills from the capture track itself, so the review frames show
     // exactly what the recording sees rather than just the canvas.
     this.rec.start(500);
-    this.shotAt = [0.12, 0.34, 0.55, 0.78, 0.95].map((f) => f * this.seconds);
+    // Encoding a 1920x1080 PNG stalls the main thread for ~100 ms and shows up
+    // as a hitch in the recording, so review stills are opt-in only.
+    this.shotAt = this.stills
+      ? [0.12, 0.34, 0.55, 0.78, 0.95].map((f) => f * this.seconds)
+      : [];
     this.state = 'recording';
     this._report(`recording ${this.seconds}s as ${mime}`);
   }
@@ -260,7 +270,23 @@ export class Cinema {
     if (this.out && (this.state === 'recording' || this.state === 'cutting')) {
       const W = this.out.width, H = this.out.height;
       this.outCtx.drawImage(this.game.renderer.domElement, 0, 0);
-      if (this.withHud) drawHudOverlay(this.outCtx, W, H);
+      if (this.withHud) {
+        // Repaint the overlay only when its values move, then blit the cached
+        // layer. Redrawing all of it per frame was pure overhead.
+        const now = performance.now();
+        if (!this.hudLayer) {
+          this.hudLayer = document.createElement('canvas');
+          this.hudLayer.width = W; this.hudLayer.height = H;
+          this.hudCtx = this.hudLayer.getContext('2d');
+          this.hudAt = 0;
+        }
+        if (now - this.hudAt > 110) {
+          this.hudAt = now;
+          this.hudCtx.clearRect(0, 0, W, H);
+          drawHudOverlay(this.hudCtx, W, H);
+        }
+        this.outCtx.drawImage(this.hudLayer, 0, 0);
+      }
       this._drawTitle(this.outCtx, W, H);
       if (this.fade > 0) {
         this.outCtx.fillStyle = `rgba(4,9,15,${this.fade})`;
@@ -317,18 +343,31 @@ export class Cinema {
   async _nextSegment() {
     this.state = 'cutting';
     const ease = (ms) => new Promise((r) => setTimeout(r, ms));
-    for (let i = 1; i <= 12; i++) { this.fade = i / 12; await ease(28); }
+    for (let i = 1; i <= 14; i++) { this.fade = i / 14; await ease(26); }
+
+    // Loading the next world takes seconds. Recording that produced a long
+    // black hole in the middle of the reel, so pause the recorder across it:
+    // the cut lands as a clean fade with no dead air.
+    if (this.rec.state === 'recording') this.rec.pause();
 
     this.segIdx++;
-    const loc = REEL[this.segIdx];
-    await this.game.relocate(loc);
-    await ease(700);                       // let the first tiles settle
+    await this.game.relocate(REEL[this.segIdx]);
+
+    // wait for the tile queue to drain, so the resume is not a stutter
+    const t0 = performance.now();
+    while (performance.now() - t0 < 12000) {
+      const st = this.game.store.stats;
+      if (st.queued === 0 && st.loaded >= 20) break;
+      await ease(120);
+    }
+    await ease(400);
+    if (this.rec.state === 'paused') this.rec.resume();
 
     this.t = 0;
     this.titleT = 0;
-    this.shotAt = [0.42, 0.8].map((f) => f * this.seconds);   // review each location
+    this.shotAt = this.stills ? [0.42, 0.8].map((f) => f * this.seconds) : [];
     this.state = 'recording';
-    for (let i = 11; i >= 0; i--) { this.fade = i / 12; await ease(28); }
+    for (let i = 13; i >= 0; i--) { this.fade = i / 14; await ease(26); }
     this.fade = 0;
   }
 

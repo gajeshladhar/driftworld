@@ -1,6 +1,6 @@
 // ── Driftworld · main loop ──────────────────────────────────────────────────
 import * as THREE from 'three';
-import { LOCATIONS, ZOOM, CLASSES, CLASS_ORDER, BOAT, SKY, SHIP, ATMOSPHERES, RUN } from './config.js';
+import { LOCATIONS, ZOOM, CLASSES, CLASS_ORDER, BOAT, SKY, SHIP, ATMOSPHERES, RUN, GLOBE } from './config.js';
 import { makeFrame, lonLatToMerc, mercToLonLat, mercToTile } from './geo.js';
 import { TileStore } from './tiles.js';
 import { Terrain } from './terrain.js';
@@ -14,6 +14,8 @@ import { Run } from './objectives.js';
 import { Places } from './places.js';
 import { Cinema } from './cinema.js';
 import { disposeProps } from './props.js';
+import { Backdrop } from './backdrop.js';
+import { Globe } from './globe.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -98,6 +100,8 @@ class Game {
     this.shipAmb = new THREE.AmbientLight(0x6a7ea8, 2.1);
     this.shipScene.add(this.shipKey, fill, rim, this.shipAmb);
 
+    this.backdrop = new Backdrop(this.scene, this.store, this.frame, this.terrain.base);
+
     this.pixel = new PixelPass(this.renderer);
     this.onResize();
     window.addEventListener('resize', () => this.onResize());
@@ -146,6 +150,7 @@ class Game {
     this.buildLegend();
 
     const qp = new URLSearchParams(location.search);
+    if (qp.get('globe') === '1') setTimeout(() => this.toggleGlobe(), 300);
     const cineSecs = parseInt(qp.get('cinema'), 10);
     if (cineSecs) {
       const withHud = qp.get('hud') === '1';
@@ -179,6 +184,7 @@ class Game {
       }
       if (e.code === 'KeyM') $('mapwrap').classList.toggle('hidden');
       if (e.code === 'KeyT') this.applyAtmosphere(this.atmo + 1);
+      if (e.code === 'KeyE') this.toggleGlobe();
     });
     window.addEventListener('keyup', (e) => { if (KEYS[e.code]) input[KEYS[e.code]] = 0; });
     window.addEventListener('blur', () => Object.keys(input).forEach((k) => (input[k] = 0)));
@@ -198,6 +204,7 @@ class Game {
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
     this.pixel.setSize(w, h);
+    this.globe?.setSize(w, h);
   }
 
   /** Drop a whole world: meshes, textures, instanced scenery, labels, buoys. */
@@ -231,6 +238,7 @@ class Game {
     this.store = new TileStore();
 
     this.terrain = new Terrain(this.scene, this.store, this.frame);
+    this.backdrop = new Backdrop(this.scene, this.store, this.frame, this.terrain.base);
     this.applyAtmosphere(this.atmo);
 
     const [mx0, my0] = lonLatToMerc(loc.lon, loc.lat);
@@ -250,6 +258,25 @@ class Game {
     this.places = new Places(this.scene, this.frame, this.store);
     this.places.onRegion = (label) => this.run.toast(label.toUpperCase(), 'rank');
     this.run.energy = 100;
+  }
+
+  /** Pull back to orbit, or drop from orbit to whatever is under the camera. */
+  toggleGlobe() {
+    if (this.globeOn) {
+      const [lon, lat] = this.globe.centreLonLat();
+      this.globeOn = false;
+      this.applyAtmosphere(this.atmo);      // restores the sky clear colour
+      $('hud').classList.remove('globe-hidden');
+      this.relocate({ name: 'Descent', lat, lon });
+      return;
+    }
+    if (!this.globe) this.globe = new Globe(this.store);
+    this.globe.load();
+    this.globe.setSize(window.innerWidth, window.innerHeight);
+    this.globeOn = true;
+    // space, not the atmosphere's horizon tint the ground view leaves behind
+    this.renderer.setClearColor(0x05070d, 1);
+    $('hud').classList.add('globe-hidden');
   }
 
   applyAtmosphere(i) {
@@ -410,6 +437,20 @@ class Game {
     const dt = Math.min(this.clock.getDelta(), 0.05);
     const p = this.player;
 
+    if (this.globeOn) {
+      this.globe.update(dt, input);
+      this.renderer.setRenderTarget(null);
+      this.renderer.clear();
+      this.renderer.render(this.globe.scene, this.globe.camera);
+      const [glon, glat] = this.globe.centreLonLat();
+      $('r-region').textContent = `ORBIT · ${this.globe.progress * 100 | 0}% loaded`;
+      $('r-pos').textContent = `${glat.toFixed(2)}°, ${glon.toFixed(2)}°`;
+      return;
+    }
+
+    // climbing far enough pulls the view back to the whole planet
+    if (p.mode === 'fly' && p.y > GLOBE.enterAltitude && !this.globeOn) this.toggleGlobe();
+
     // No power means no thrust — the hull keeps its momentum and coasts.
     const dead = this.run.over || this.run.powerless;
     const src = this.cinema ? this.cinema.update(dt) : input;
@@ -425,7 +466,11 @@ class Game {
     // altitude opens the view distance; the sky dome rides with the camera so
     // you can never climb out of it
     const alt = Math.max(0, p.y);
-    this.terrain.setFog(3200 + alt * 1.4, Math.min(70000, 11000 + alt * 5.5));
+    const fogNear = 3200 + alt * 1.4, fogFar = Math.min(70000, 11000 + alt * 5.5);
+    this.terrain.setFog(fogNear, fogFar);
+    this.backdrop.update(p.mx, p.my, alt);
+    this.backdrop.setTime(this.clock.elapsedTime);
+    this.backdrop.setFog(fogNear, fogFar);
     const target = this.run.over ? this.nav.target(p) : this.nav.update(p, dt);
 
     const [wx, wz] = p.worldPos;
