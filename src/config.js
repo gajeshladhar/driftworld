@@ -186,3 +186,17 @@ export const WEATHER = {
   refreshKm: 25,      // refetch once you have travelled this far
   windDrift: 0.12,    // hull drift per m/s of wind; enough to feel, not to strand
 };
+
+// ── Cloud deck ──────────────────────────────────────────────────────────────
+// Heights are world units, i.e. metres x VERTICAL_EXAGGERATION. base 2600 is
+// roughly a 1450 m cloud base, which sits above most fjord walls but well
+// inside the craft's climb range.
+export const CLOUDS = {
+  layers:     3,
+  base:       2600,
+  spacing:    420,
+  span:       46000,
+  scale:      0.00055,
+  fade:       520,      // camera distance over which a layer dissolves
+  driftScale: 0.6,
+};

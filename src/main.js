@@ -1,20 +1,21 @@
 // ── Driftworld · main loop ──────────────────────────────────────────────────
 import * as THREE from 'three';
-import { LOCATIONS, ZOOM, CLASSES, CLASS_ORDER, BOAT, SKY, SHIP, ATMOSPHERES, RUN, WEATHER } from './config.js?v=de65e7b7';
-import { makeFrame, lonLatToMerc, mercToLonLat, mercToTile } from './geo.js?v=de65e7b7';
-import { TileStore } from './tiles.js?v=de65e7b7';
-import { Terrain } from './terrain.js?v=de65e7b7';
-import { Player } from './player.js?v=de65e7b7';
-import { PixelPass } from './pixel.js?v=de65e7b7';
-import { makeSky, HORIZON } from './sky.js?v=de65e7b7';
-import { makeShip, updateShip } from './ship.js?v=de65e7b7';
-import { Minimap } from './minimap.js?v=de65e7b7';
-import { Nav } from './nav.js?v=de65e7b7';
-import { Run } from './objectives.js?v=de65e7b7';
-import { Places } from './places.js?v=de65e7b7';
-import { Weather } from './weather.js?v=de65e7b7';
-import { Cinema } from './cinema.js?v=de65e7b7';
-import { disposeProps } from './props.js?v=de65e7b7';
+import { LOCATIONS, ZOOM, CLASSES, CLASS_ORDER, BOAT, SKY, SHIP, ATMOSPHERES, RUN, WEATHER } from './config.js?v=d646eb69';
+import { makeFrame, lonLatToMerc, mercToLonLat, mercToTile } from './geo.js?v=d646eb69';
+import { TileStore } from './tiles.js?v=d646eb69';
+import { Terrain } from './terrain.js?v=d646eb69';
+import { Player } from './player.js?v=d646eb69';
+import { PixelPass } from './pixel.js?v=d646eb69';
+import { makeSky, HORIZON } from './sky.js?v=d646eb69';
+import { makeShip, updateShip } from './ship.js?v=d646eb69';
+import { Minimap } from './minimap.js?v=d646eb69';
+import { Nav } from './nav.js?v=d646eb69';
+import { Run } from './objectives.js?v=d646eb69';
+import { Places } from './places.js?v=d646eb69';
+import { Weather } from './weather.js?v=d646eb69';
+import { Clouds } from './clouds.js?v=d646eb69';
+import { Cinema } from './cinema.js?v=d646eb69';
+import { disposeProps } from './props.js?v=d646eb69';
 
 const $ = (id) => document.getElementById(id);
 
@@ -82,6 +83,8 @@ class Game {
     this.scene.add(this.sunLight);
     this.hemi = new THREE.HemisphereLight(SKY.horizon, 0x2a3428, 1.15);
     this.scene.add(this.hemi);
+
+    this.clouds = new Clouds(this.scene);
 
     this.terrain = new Terrain(this.scene, this.store, this.frame);
     this.terrain.base.uniforms.uSunDir.value.copy(SUN);
@@ -265,6 +268,9 @@ class Game {
     const sea = this.weather.seaState();
     this.terrain.setSea(sea.amp, sea.speed);
     if (this.sky) this.sky.material.uniforms.uCloud.value = Math.min(1, w.cloud / 100);
+    // ?cloud=0..1 forces coverage, for checking the deck without waiting on weather
+    const forced = parseFloat(new URLSearchParams(location.search).get('cloud'));
+    this.clouds?.setWeather(isFinite(forced) ? forced * 100 : w.cloud, w.wind, w.windDir);
 
     const wx = $('wx');
     wx.classList.remove('pending');
@@ -306,6 +312,7 @@ class Game {
     this.terrain.setAtmosphere(sun, horizon, top);
     this.renderer.setClearColor(horizon, 1);
 
+    this.clouds?.setAtmosphere(sun, horizon);
     this.sunLight.color.set(a.light);
     this.sunLight.position.copy(sun).multiplyScalar(5000);
     this.hemi.color.set(a.horizon);

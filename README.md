@@ -169,6 +169,23 @@ floor, and every failure is silent. Labels draw with `depthTest: false` - seeing
 that a town sits behind the ridge ahead is the entire point - with only the
 nearest dozen shown, ranked so a city outranks a nearer hamlet.
 
+**Weather is real, and it drives the world rather than a readout.** Live wave
+height and period set the water shader's amplitude and speed, cloud cover
+flattens the sky toward grey, and real wind pushes the hull - at a drift low
+enough to feel without stranding you, and routed through the same hull
+clearance test so wind can never push you onto land. Inland, where the marine
+endpoint has no data, sea state is inferred from wind alone rather than letting
+lakes turn to glass.
+
+**The cloud deck is sheets, not volumetrics.** Three large horizontal planes of
+procedural noise at ~1450 m, which you can fly above and below. Two details do
+the work: each layer dissolves as the camera nears its altitude, because a flat
+sheet seen edge-on is a razor line across the screen - that fade is what turns
+"a plane at 2600 units" into "passing through cloud" - and alpha rolls off at
+grazing angles, where the slant path through a flat layer is effectively
+infinite and would otherwise saturate the whole frame. `?cloud=0..1` forces
+coverage for testing.
+
 **Crack-free tile edges.** Every DEM lookup goes through global mercator pixel
 coordinates rather than per-tile UVs, so neighbouring meshes compute identical
 heights on shared edges. Tiles built before their neighbours arrived are marked
