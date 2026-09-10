@@ -1,21 +1,23 @@
 # Driftworld
 
+**[▶ Play it in your browser](https://gajeshladhar.github.io/driftworld/)**
+
 An alien craft on the real Earth. You can only travel where the satellite says
 there is water.
 
-![Lake Como](capture/shot-23s.png)
+![Storfjorden, Norway](capture/shot-10s.png)
 
 Everything you fly over is real data: land cover comes from ESRI / Impact
 Observatory's Sentinel-2 10 m classification, elevation from 30 m DEM tiles, and
 the place names from OpenStreetMap. Water is navigable because the classifier
 says it is water — the boat physics read the same pixels you are looking at.
 
-**[30-second flythrough of Lake Como](capture/driftworld.mp4)** (MP4, 1280x720)
+**[30-second flythrough](capture/driftworld-tab.mp4)** (MP4, 1600x900)
 
 <table>
 <tr>
-<td><img src="capture/shot-10s.png" alt="Lake Como surface run"></td>
-<td><img src="capture/shot-29s.png" alt="Above the Alps"></td>
+<td><img src="capture/shot-17s.png" alt="Flying the fjord"></td>
+<td><img src="capture/shot-29s.png" alt="Above the ridgelines"></td>
 </tr>
 </table>
 
