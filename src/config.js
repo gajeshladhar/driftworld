@@ -102,9 +102,9 @@ export const SHIP = {
 
 // -- Scenery density. Stride is in LULC pixels (10 m each). -----------------
 export const PROPS = {
-  treeStride:  8,  treeChance:  0.44,
-  buildStride: 9,  buildChance: 0.55,
-  shrubStride: 14, shrubChance: 0.26,
+  treeStride:  7,  treeChance:  0.60,
+  buildStride: 8,  buildChance: 0.72,
+  shrubStride: 12, shrubChance: 0.32,
   rockStride:  13, rockChance:  0.28,
 };
 
@@ -180,24 +180,3 @@ export const REEL = [
   { name: 'LYSEFJORD',        sub: 'ROGALAND, NORWAY',     lat: 59.0400, lon:  6.4600 },
   { name: 'LAGO DI COMO',     sub: 'LOMBARDIA, ITALY',     lat: 46.1400, lon:  9.3000 },
 ];
-
-// -- Distant backdrop: coarse flat tiles once you climb ----------------------
-export const BACKDROP = {
-  minAltitude: 900,
-  grid:        5,
-  seg:         20,
-  minZoom:     7,
-  maxZoom:     11,
-};
-
-// -- Globe view: the whole planet, wrapped from low-zoom tiles ---------------
-export const GLOBE = {
-  zoom:          3,        // 8x8 = 64 tiles cover the Earth
-  patchSeg:      14,
-  radius:        4000,
-  ocean:         0x0B3050, // the classifier has no data over open sea
-  spinRate:      0.55,
-  drift:         0.055,    // gentle idle rotation
-  zoomRate:      0.55,
-  enterAltitude: 26000,    // climb past this in flight and the view pulls back
-};
