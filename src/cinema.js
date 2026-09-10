@@ -3,8 +3,8 @@
 // Only the WebGL canvas is captured, so the DOM HUD is hidden for the take and
 // the world's own place labels (which are sprites) still appear.
 import * as THREE from 'three';
-import { VERTICAL_EXAGGERATION, REEL } from './config.js?v=d646eb69';
-import { drawHudOverlay } from './hudcanvas.js?v=d646eb69';
+import { VERTICAL_EXAGGERATION, REEL } from './config.js?v=969ac6ad';
+import { drawHudOverlay } from './hudcanvas.js?v=969ac6ad';
 
 const angDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 
@@ -66,38 +66,25 @@ export class Cinema {
    * taking the longest run keeps the boat in the channel without any authored
    * path, which matters because the route is different at every location.
    */
+  /**
+   * Steer toward open air: sample a fan of bearings and take the one whose
+   * terrain profile sits lowest, so the take flies valleys rather than walls.
+   */
   _autoHeading() {
-    const { player, store, frame } = this.game;
-    let best = player.heading, bestScore = -1e9;
+    const { player, frame } = this.game;
+    let best = player.heading, bestScore = Infinity;
     for (let i = -7; i <= 7; i++) {
       const h = player.heading + i * 0.16;
-      let run = 0;
-      for (let d = 40; d <= 900; d += 40) {
-        const mdx = (Math.sin(h) * d) / frame.k;
-        const mdy = (Math.cos(h) * d) / frame.k;
-        if (!store.isWaterAtMerc(player.mx + mdx, player.my + mdy)) break;
-        run = d;
+      let peak = 0;
+      for (let d = 200; d <= 2600; d += 300) {
+        const mx = player.mx + (Math.sin(h) * d) / frame.k;
+        const my = player.my - (-Math.cos(h) * d) / frame.k;
+        peak = Math.max(peak, player.obstacleTop(mx, my));
       }
-      const score = run - Math.abs(i) * 26;   // mild bias to holding course
-      if (score > bestScore) { bestScore = score; best = h; }
+      const score = peak + Math.abs(i) * 26;
+      if (score < bestScore) { bestScore = score; best = h; }
     }
     return best;
-  }
-
-  /** Highest terrain within a couple of kilometres, in world units. */
-  _terrainCeiling() {
-    const { player: p, store, frame } = this.game;
-    let m = 0;
-    for (const r of [0, 1300, 2600]) {
-      const n = r ? 8 : 1;
-      for (let i = 0; i < n; i++) {
-        const a = (i / n) * Math.PI * 2;
-        const h = store.heightAtMerc(p.mx + (Math.cos(a) * r) / frame.k,
-                                     p.my + (Math.sin(a) * r) / frame.k);
-        if (h !== null && h > m) m = h;
-      }
-    }
-    return m * VERTICAL_EXAGGERATION;
   }
 
   _drive(dt) {
@@ -106,7 +93,6 @@ export class Cinema {
     const inp = this.input;
     inp.fwd = 1; inp.back = 0; inp.boost = 0; inp.up = 0; inp.down = 0;
     g.run.energy = 100;            // the take must never strand
-    if (p.mode === 'boat') inp.boost = 1;
 
     // Follow the water corridor in both modes. In flight this keeps the craft
     // over the fjord instead of straight into the wall beside it, and it is
@@ -115,21 +101,13 @@ export class Cinema {
     // The forward ray fan can only find water that is already ahead; once the
     // craft has drifted over land every ray reads zero and it holds course out
     // over the hillside. So when off the water, steer back to the nearest of it.
-    let target = this._autoHeading();
-    if (p.mode === 'fly' && !g.store.isWaterAtMerc(p.mx, p.my)) {
-      const w = g.store.findWaterNear(p.mx, p.my, 220);
-      if (w) {
-        const [tx, tz] = g.frame.toWorld(w[0], w[1]);
-        const [px, pz] = p.worldPos;
-        target = Math.atan2(tx - px, -(tz - pz));
-      }
-    }
+    const target = this._autoHeading();
     const d = angDiff(target, p.heading);
-    const dead = p.mode === 'boat' ? 0.04 : 0.09;
+    const dead = 0.09;
     inp.left = d < -dead ? 1 : 0;
     inp.right = d > dead ? 1 : 0;
 
-    if (p.mode === 'fly') {
+    {
       // Cap the speed for the take. At the full 700 m/s the craft crosses a
       // 1 km fjord faster than it can turn, so it always ends up out over the
       // hillside no matter how it steers.
@@ -302,7 +280,6 @@ export class Cinema {
       this.t += dt;
       this.titleT += dt;
       // lift off the water partway through for the aerial half
-      if (g.player.mode === 'boat' && this.t > this.seconds * this.phaseA) g.player.toggleMode();
       if (this.t >= this.seconds) {
         if (this.reel && this.segIdx < REEL.length - 1) { this._nextSegment(); }
         else { this.state = 'stopping'; this.rec.stop(); }

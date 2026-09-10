@@ -1,84 +1,75 @@
-// ── Navigation: waypoint buoys with visible light columns ───────────────────
+// ── Life cells: scattered pickups that restore a life ───────────────────────
+// These float in open air rather than sitting on the ground, because the craft
+// can no longer land — a pickup you cannot reach without crashing is a trap.
 import * as THREE from 'three';
-import { NAV, VERTICAL_EXAGGERATION } from './config.js?v=d646eb69';
+import { CELLS, VERTICAL_EXAGGERATION } from './config.js?v=969ac6ad';
 
-const COL_A = 0xff7a3d;   // buoy
-const COL_B = 0xffd24a;   // current target
+const COL = 0x3dffa8;
+const COL_NEXT = 0xffd24a;
 
-function makeBeacon() {
+const glow = (hex, opacity = 1) => new THREE.MeshBasicMaterial({
+  color: hex, transparent: opacity < 1, opacity,
+  blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+});
+
+function makeCell() {
   const g = new THREE.Group();
 
-  const pole = new THREE.Mesh(
-    new THREE.BoxGeometry(2.4, 16, 2.4),
-    new THREE.MeshBasicMaterial({ color: 0xf2f2f2 }),
-  );
-  pole.position.y = 8;
-  g.add(pole);
-
-  const drum = new THREE.Mesh(
-    new THREE.CylinderGeometry(5.5, 6.5, 7, 8),
-    new THREE.MeshBasicMaterial({ color: COL_A }),
-  );
-  drum.position.y = 3.5;
-  g.add(drum);
-
-  const lamp = new THREE.Mesh(
-    new THREE.BoxGeometry(4.5, 4.5, 4.5),
+  const core = new THREE.Mesh(
+    new THREE.OctahedronGeometry(11, 0),
     new THREE.MeshBasicMaterial({ color: 0xffffff }),
   );
-  lamp.position.y = 18;
-  g.add(lamp);
+  g.add(core);
 
-  // vertical light column — the thing that makes a buoy findable at 3 km
-  const beamMat = new THREE.MeshBasicMaterial({
-    color: COL_A, transparent: true, opacity: 0.22,
-    depthWrite: false, side: THREE.DoubleSide,
-    blending: THREE.AdditiveBlending,
-  });
+  const shell = new THREE.Mesh(new THREE.OctahedronGeometry(17, 0), glow(COL, 0.35));
+  g.add(shell);
+
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(24, 1.6, 8, 28), glow(COL, 0.8));
+  ring.rotation.x = Math.PI / 2;
+  g.add(ring);
+
+  // a column so it can be spotted from below and from a distance
   const beam = new THREE.Mesh(
-    new THREE.CylinderGeometry(3.2, 4.6, NAV.beaconHeight, 6, 1, true),
-    beamMat,
+    new THREE.CylinderGeometry(4.5, 7, CELLS.beaconHeight, 6, 1, true),
+    glow(COL, 0.16),
   );
-  beam.position.y = NAV.beaconHeight / 2;
   g.add(beam);
 
-  g.userData = { drum, lamp, beam, beamMat };
+  g.userData = { core, shell, ring, beam };
   return g;
 }
 
 export class Nav {
-  constructor(scene, store, frame, onReach = null) {
-    this.onReach = onReach;
+  constructor(scene, store, frame, onCollect = null) {
     this.scene = scene;
     this.store = store;
     this.frame = frame;
-    this.buoys = [];
+    this.onCollect = onCollect;
+    this.cells = [];
+    this.buoys = this.cells;      // the chart and capture code read .buoys
     this.reached = 0;
     this.nextId = 1;
     this.t = 0;
   }
 
   _place(player) {
-    for (let attempt = 0; attempt < 24; attempt++) {
+    for (let attempt = 0; attempt < 18; attempt++) {
       const a = Math.random() * Math.PI * 2;
-      const d = NAV.minRange + Math.random() * (NAV.maxRange - NAV.minRange);
-      const mdx = (Math.sin(a) * d) / this.frame.k;
-      const mdy = (Math.cos(a) * d) / this.frame.k;
-      const w = this.store.findWaterNear(player.mx + mdx, player.my + mdy, 90);
-      if (!w) continue;
+      const d = CELLS.minRange + Math.random() * (CELLS.maxRange - CELLS.minRange);
+      const mx = player.mx + (Math.sin(a) * d) / this.frame.k;
+      const my = player.my + (Math.cos(a) * d) / this.frame.k;
 
-      const [wx, wz] = this.frame.toWorld(w[0], w[1]);
-      const [px, pz] = player.worldPos;
-      if (Math.hypot(wx - px, wz - pz) < NAV.minRange * 0.6) continue;
-      // don't stack buoys on top of each other
-      if (this.buoys.some((b) => Math.hypot(b.wx - wx, b.wz - wz) < 350)) continue;
+      const [wx, wz] = this.frame.toWorld(mx, my);
+      if (this.cells.some((c) => Math.hypot(c.wx - wx, c.wz - wz) < 600)) continue;
 
-      const h = this.store.heightAtMerc(w[0], w[1]);
-      const mesh = makeBeacon();
-      const y = (h ?? 0) * VERTICAL_EXAGGERATION;
+      const h = this.store.heightAtMerc(mx, my);
+      if (h === null) continue;
+      const y = h * VERTICAL_EXAGGERATION + CELLS.aboveGround;
+
+      const mesh = makeCell();
       mesh.position.set(wx, y, wz);
       this.scene.add(mesh);
-      this.buoys.push({ id: this.nextId++, mx: w[0], my: w[1], wx, wz, y, mesh });
+      this.cells.push({ id: this.nextId++, mx, my, wx, wz, y, mesh });
       return true;
     }
     return false;
@@ -86,21 +77,28 @@ export class Nav {
 
   ensure(player) {
     let guard = 3;
-    while (this.buoys.length < NAV.buoyCount && guard-- > 0) {
+    while (this.cells.length < CELLS.active && guard-- > 0) {
       if (!this._place(player)) break;
     }
   }
 
-  /** Nearest buoy to the player, or null. */
+  /** Nearest cell, with its 3D distance attached. */
   target(player) {
     const [px, pz] = player.worldPos;
     let best = null, bd = Infinity;
-    for (const b of this.buoys) {
-      const d = Math.hypot(b.wx - px, b.wz - pz);
-      if (d < bd) { bd = d; best = b; }
+    for (const c of this.cells) {
+      const d = Math.hypot(c.wx - px, c.wz - pz, c.y - player.y);
+      if (d < bd) { bd = d; best = c; }
     }
     if (best) best.dist = bd;
     return best;
+  }
+
+  _remove(i) {
+    const c = this.cells[i];
+    this.scene.remove(c.mesh);
+    c.mesh.traverse((o) => { o.geometry?.dispose(); o.material?.dispose(); });
+    this.cells.splice(i, 1);
   }
 
   update(player, dt) {
@@ -108,38 +106,31 @@ export class Nav {
     const [px, pz] = player.worldPos;
     const tgt = this.target(player);
 
-    for (let i = this.buoys.length - 1; i >= 0; i--) {
-      const b = this.buoys[i];
-      const isTarget = tgt && b.id === tgt.id;
-      const u = b.mesh.userData;
-      const col = isTarget ? COL_B : COL_A;
-      u.drum.material.color.setHex(col);
-      u.beamMat.color.setHex(col);
-      u.beamMat.opacity = isTarget ? 0.3 : 0.18;
-      u.lamp.rotation.y = this.t * 2.2;
-      u.lamp.position.y = 18 + Math.sin(this.t * 3 + b.id) * 0.8;
-      u.lamp.material.color.setHex(
-        Math.sin(this.t * 4 + b.id) > 0 ? 0xffffff : col,
-      );
+    for (let i = this.cells.length - 1; i >= 0; i--) {
+      const c = this.cells[i];
+      const u = c.mesh.userData;
+      const isNext = tgt && c.id === tgt.id;
+      const col = isNext ? COL_NEXT : COL;
+      u.shell.material.color.setHex(col);
+      u.ring.material.color.setHex(col);
+      u.beam.material.color.setHex(col);
+      u.shell.rotation.y = this.t * 0.9;
+      u.shell.rotation.x = this.t * 0.5;
+      u.ring.rotation.z = this.t * 1.4;
+      const pulse = 1 + Math.sin(this.t * 3 + c.id) * 0.08;
+      u.core.scale.setScalar(pulse);
+      c.mesh.position.y = c.y + Math.sin(this.t * 1.4 + c.id) * 9;
 
-      const d = Math.hypot(b.wx - px, b.wz - pz);
-      if (d < NAV.reachRadius) {
-        this.onReach?.(b);
+      const d = Math.hypot(c.wx - px, c.wz - pz, c.mesh.position.y - player.y);
+      if (d < CELLS.reachRadius) {
+        this.onCollect?.(c);
         this._remove(i);
         this.reached++;
-      } else if (d > NAV.maxRange * 2.2) {
-        // outrun — retire it so a fresh one can appear ahead of the player
-        this._remove(i);
+      } else if (Math.hypot(c.wx - px, c.wz - pz) > CELLS.maxRange * 2.4) {
+        this._remove(i);          // outrun; a fresh one will appear ahead
       }
     }
     this.ensure(player);
-    return this.target(player);   // recomputed: the old target may have just been retired
-  }
-
-  _remove(i) {
-    const b = this.buoys[i];
-    this.scene.remove(b.mesh);
-    b.mesh.traverse((o) => { o.geometry?.dispose(); o.material?.dispose(); });
-    this.buoys.splice(i, 1);
+    return this.target(player);
   }
 }

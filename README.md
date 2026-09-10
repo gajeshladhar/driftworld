@@ -69,20 +69,26 @@ Query parameters:
 | `?cinema=30` | fly a scripted 30 s take and record it |
 | `?cinema=13&reel=1&hud=1` | showreel across every REEL location, HUD included |
 
+## The run
+
+Distance is the score. You never land - the only thing that stops you is
+hitting something, and the terrain, the forest canopy and the city blocks are
+all real. Every impact costs one of nine lives; life cells drift in open air
+along the route to give one back.
+
 ## Controls
 
 | Key | |
 |---|---|
 | `W` / `Up` | thrust |
-| `S` / `Down` | brake, then reverse |
-| `A` / `D` | steer (speed-gated - no turning at a standstill) |
-| `Shift` | boost (also multiplies climb rate in flight) |
-| `V` | toggle cruise / flight |
-| `Space` or `R` | climb (flight, no ceiling) |
-| `Ctrl` or `F` | descend |
-| `M` | toggle chart |
-| `G` | teleport to nearest water if stuck |
+| `S` | brake |
+| `A` / `D` | steer |
+| `Shift` | boost |
+| `Space` | climb |
+| `Ctrl` | dive |
+| `G` | emergency pull-up |
 | `T` | cycle time of day |
+| `M` | toggle chart |
 
 ## Data
 
@@ -168,6 +174,14 @@ service, so queries are debounced by both distance travelled and a hard 20 s
 floor, and every failure is silent. Labels draw with `depthTest: false` - seeing
 that a town sits behind the ridge ahead is the entire point - with only the
 nearest dozen shown, ranked so a city outranks a nearer hamlet.
+
+**Scenery is collided against by class, not by instance.** There are tens of
+thousands of instanced trees and buildings; testing them individually is not on.
+Instead the land-cover class stands in for obstacle height - over Built the
+ground is effectively 96 units higher, over Trees 34 - so the classification
+that draws the world also decides what you can hit. Collision samples under the
+nose as well as the hull, because at 200 m/s the craft covers its own length
+between frames and a centre-only test flies straight through ridge lines.
 
 **Weather is real, and it drives the world rather than a readout.** Live wave
 height and period set the water shader's amplitude and speed, cloud cover

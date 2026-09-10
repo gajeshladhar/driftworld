@@ -123,39 +123,22 @@ export const ATMOSPHERES = [
 
 // ── Survey run: the game loop ──────────────────────────────────────────────
 export const RUN = {
-  energyMax: 100,
+  lives:        9,
+  crashInvuln:  2.2,     // seconds of grace after a hit, so one ridge is one life
+  crashBounce:  260,     // how far the craft is lifted clear after a hit
 
-  // Water is the power source. Recharge is fastest at rest and tails off with
-  // speed, so sprinting always costs more than it gains — the decision is
-  // whether to burn range now or slow down and bank it.
-  regenWater:        3.2,   // per second, at a standstill on water
-  regenSpeedPenalty: 0.55,  // fraction of regen lost at full cruise speed
-  skimAltitude:      130,   // how low you must fly over water to still draw power
+  // Obstacle height above bare terrain, by land-cover class. The scenery is
+  // instanced and far too numerous to collide against individually, so the
+  // classification stands in for it: a tower block is 90 units of "ground".
+  clearance:    26,      // baseline hull clearance over open ground
+  obstacle: { BUILT: 96, TREES: 34, FLOODED: 20, SNOW: 10, WATER: 0 },
 
-  drainIdle:     0.02,      // effectively nothing
-  drainMove:     0.55,      // scaled by speed fraction
-  drainBoost:    0.70,
-  drainFlyLow:   0.25,      // skimming water
-  drainFlyHigh:  0.55,      // over land, or too high to draw
-
-  recoverAt:     18,        // energy needed to come back from a power loss
-  lowWarn:       25,
-
-  beaconEnergy:  30,
-  beaconBase:    100,
-  surveyRadius:  520,
-  surveySamples: 28,
-  chainWindow:   26,
-  chainStep:     0.5,
-  chainMax:      4.0,
-  classValue: { WATER: 1, TREES: 2, RANGELAND: 2, CROPS: 3, BARE: 3,
-                BUILT: 5, FLOODED: 6, SNOW: 6, CLOUDS: 0 },
   ranks: [
     [0,     'DRIFTER'],
-    [1500,  'SURVEYOR'],
-    [4000,  'CARTOGRAPHER'],
-    [9000,  'PATHFINDER'],
-    [18000, 'ASCENDANT'],
+    [25,    'SCOUT'],
+    [75,    'RANGER'],
+    [180,   'PATHFINDER'],
+    [400,   'ASCENDANT'],
   ],
 };
 
@@ -199,4 +182,14 @@ export const CLOUDS = {
   scale:      0.00055,
   fade:       520,      // camera distance over which a layer dissolves
   driftScale: 0.6,
+};
+
+// ── Life cells: scattered pickups that restore a life ───────────────────────
+export const CELLS = {
+  active:      5,        // how many exist ahead of you at once
+  minRange:    900,      // metres from the craft when placed
+  maxRange:    5200,
+  reachRadius: 130,
+  aboveGround: 320,      // floats this far over the terrain beneath it
+  beaconHeight: 90,
 };

@@ -110,7 +110,16 @@
   #m-rank{color:var(--accent);letter-spacing:3px;font-size:11px}
   #m-chain{color:var(--gold);letter-spacing:1px;font-size:11px}
   #m-chain.hot{color:var(--hot)}
-  #m-energy.charging{color:var(--accent)}
+  #lives{display:flex;gap:4px}
+  #lives i{flex:1;height:7px;background:rgba(255,255,255,.08);
+        border:1px solid rgba(255,255,255,.06);transition:.2s}
+  #lives i.on{background:linear-gradient(180deg,#5affc0,#1fbf86);
+        border-color:rgba(90,255,192,.5);box-shadow:0 0 6px rgba(61,255,168,.35)}
+  #lives i.on.low{background:linear-gradient(180deg,#ff9a8a,#c4483a);
+        border-color:rgba(255,122,106,.6);box-shadow:0 0 7px rgba(255,90,70,.45);
+        animation:pulse .8s ease-in-out infinite}
+  #m-clear{color:var(--faint);font-size:10px;letter-spacing:1.4px;text-align:right;margin-top:-4px}
+  #m-clear.tight{color:var(--bad)}
   #energy.charging #energyFill{background:linear-gradient(90deg,#2bbf8f,var(--accent))}
 
   .meter{height:7px;background:rgba(255,255,255,.07);position:relative;overflow:hidden}
@@ -175,7 +184,7 @@
   <div class="wrap">
     <h1>DRIFT<span>WORLD</span></h1>
     <p class="tag">Survey the real Earth. Water is where the satellite says it is —
-       and <b>water is the only thing that powers you</b>.</p>
+       Fly as far as you can without hitting it.</p>
     <div id="locs"></div>
     <div class="or">OR ENTER COORDINATES</div>
     <div id="custom">
@@ -185,23 +194,19 @@
     </div>
     <p id="status">Loading…</p>
     <div class="brief">
-      <b>The hull charges from water.</b> Recharge is fastest at rest and fades as you
-      speed up, so sprinting always costs more than it earns. Fly inland and you run
-      on reserves — skim low over water to keep drawing power. Run dry <i>on</i> water
-      and you simply drift until you recover; run dry <i>away</i> from it and the survey ends.<br>
-      <b>Reach the gold beacon.</b> Each scores on the <b>variety of land cover</b> around
-      it — a shoreline touching trees, rock and snow pays far more than open sea.
-      Chain them within 26 s to build a multiplier.<br>
+      <b>Fly as far as you can.</b> Distance is the score. You never land: the only
+      thing that stops you is hitting something — a ridge, a forest canopy, a tower
+      block. Every impact costs one of <b>nine lives</b>, and <b>life cells</b> drift in
+      open air along the way to give one back.<br>
       <span class="k">W</span>/<span class="k">&uarr;</span> thrust &nbsp;
-      <span class="k">S</span> brake &amp; reverse &nbsp;
+      <span class="k">S</span> brake &nbsp;
       <span class="k">A</span>/<span class="k">D</span> steer &nbsp;
       <span class="k">Shift</span> boost<br>
-      <span class="k">V</span> cruise &#8644; flight &nbsp;
       <span class="k">Space</span> climb &nbsp;
-      <span class="k">Ctrl</span> descend &nbsp;
+      <span class="k">Ctrl</span> dive &nbsp;
+      <span class="k">G</span> emergency pull-up &nbsp;
       <span class="k">T</span> time of day &nbsp;
-      <span class="k">M</span> chart &nbsp;
-      <span class="k">G</span> unstick
+      <span class="k">M</span> chart
     </div>
     <p class="src">
       Land cover &middot; ESRI / Impact Observatory Sentinel-2 10 m annual LULC<br>
@@ -218,7 +223,7 @@
     <dt>SPEED</dt><dd id="r-spd">—</dd>
     <dt>ELEV</dt><dd id="r-alt">—</dd>
     <dt>SURFACE</dt><dd id="r-cls">—</dd>
-    <dt>BEACON</dt><dd id="r-wp">—</dd>
+    <dt>CELL</dt><dd id="r-wp">—</dd>
     <dt>SKY</dt><dd id="r-sky">—</dd>
     <dt>TILES</dt><dd id="r-tiles">—</dd>
   </dl>
@@ -264,12 +269,13 @@
       <span id="m-chain"></span>
       <span id="m-rank">DRIFTER</span>
     </div>
+    <div id="m-clear">--</div>
     <div>
-      <div class="mlabel"><span>ENERGY</span><span id="m-energy">100%</span></div>
-      <div class="meter" id="energy"><i id="energyFill" style="width:100%"></i></div>
+      <div class="mlabel"><span>LIVES</span><span id="m-lives">9 / 9</span></div>
+      <div id="lives"></div>
     </div>
     <div>
-      <div class="mlabel"><span id="m-nextlabel">NEXT RANK</span><span id="m-beacons">0 SURVEYED</span></div>
+      <div class="mlabel"><span id="m-nextlabel">NEXT RANK</span><span id="m-beacons">0 COLLECTED</span></div>
       <div class="meter"><i id="rankFill" style="width:0%"></i></div>
     </div>
   </div>
@@ -277,8 +283,8 @@
   <div id="ctl" class="panel">
     <b>W</b>/<b>&uarr;</b> thrust &nbsp; <b>S</b> brake<br>
     <b>A/D</b> steer &nbsp; <b>Shift</b> boost<br>
-    <b>V</b> flight &nbsp; <b>Space</b> climb<br>
-    <b>T</b> sky &nbsp; <b>M</b> chart &nbsp; <b>G</b> unstick
+    <b>Space</b> climb &nbsp; <b>Ctrl</b> dive<br>
+    <b>T</b> sky &nbsp; <b>M</b> chart &nbsp; <b>G</b> pull up
   </div>
 
   <div id="toasts"></div>
@@ -288,13 +294,13 @@
 
 <div id="over" class="hidden">
   <div class="wrap">
-    <h2>STRANDED</h2>
-    <p class="sub">RAN DRY AWAY FROM WATER — SURVEY ENDED</p>
+    <h2>DOWN</h2>
+    <p class="sub">ALL LIVES LOST — RUN ENDED</p>
     <dl>
-      <dt>FINAL SCORE</dt><dd class="big" id="o-score">0</dd>
+      <dt>DISTANCE</dt><dd class="big" id="o-score">0 km</dd>
       <dt>RANK</dt><dd id="o-rank">—</dd>
-      <dt>BEACONS</dt><dd id="o-beacons">0</dd>
-      <dt>DISTANCE</dt><dd id="o-dist">0 km</dd>
+      <dt>RUN</dt><dd id="o-beacons">0</dd>
+      <dt>BEST</dt><dd id="o-dist">0 km</dd>
       <dt>DURATION</dt><dd id="o-time">0:00</dd>
     </dl>
     <button id="again">NEW SURVEY</button>
@@ -304,6 +310,6 @@
 <script type="importmap">
 { "imports": { "three": "./vendor/three.module.js" } }
 </script>
-<script type="module" src="./src/main.js?v=d646eb69"></script>
+<script type="module" src="./src/main.js?v=969ac6ad"></script>
 </body>
 </html>

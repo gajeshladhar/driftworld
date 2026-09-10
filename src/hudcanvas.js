@@ -7,7 +7,7 @@
 //
 // Values are read from the live DOM rather than recomputed, so what is
 // recorded always matches what the player sees.
-import { CLASS_ORDER, CLASSES } from './config.js?v=d646eb69';
+import { CLASS_ORDER, CLASSES } from './config.js?v=969ac6ad';
 
 const MONO = 'ui-monospace, Menlo, Consolas, monospace';
 const INK = '#e8f1f7', DIM = '#8ea6b8', FAINT = '#5f7688', ACCENT = '#38e8ff', GOLD = '#ffd24a';
@@ -126,14 +126,17 @@ export function drawHudOverlay(ctx, W, H) {
   ctx.font = `9px ${MONO}`;
   ctx.fillStyle = FAINT;
   ctx.textAlign = 'left';
-  ctx.fillText('E N E R G Y', mx + 15, my + 44);
+  ctx.fillText('L I V E S', mx + 15, my + 44);
   ctx.textAlign = 'right';
-  ctx.fillText(txt('m-energy'), mx + mw - 15, my + 44);
-  const low = $('energy').classList.contains('low');
-  const charging = $('energy').classList.contains('charging');
-  meter(ctx, mx + 15, my + 56, mw - 30, 7, pct('energyFill'),
-        low ? '#c4483a' : charging ? '#2bbf8f' : '#1f9dd6',
-        low ? '#ff7a6a' : ACCENT);
+  ctx.fillText(txt('m-lives'), mx + mw - 15, my + 44);
+  const pips = [...document.querySelectorAll('#lives i')];
+  const gap = 4, pw = (mw - 30 - gap * (pips.length - 1)) / Math.max(1, pips.length);
+  pips.forEach((el, i) => {
+    const on = el.classList.contains('on');
+    const low = el.classList.contains('low');
+    ctx.fillStyle = on ? (low ? '#ff7a6a' : '#3dffa8') : 'rgba(255,255,255,0.10)';
+    ctx.fillRect(mx + 15 + i * (pw + gap), my + 56, pw, 7);
+  });
 
   ctx.fillStyle = FAINT;
   ctx.textAlign = 'left';
@@ -146,8 +149,8 @@ export function drawHudOverlay(ctx, W, H) {
   const lines = [
     ['W/↑', 'thrust', 'S', 'brake'],
     ['A/D', 'steer', 'Shift', 'boost'],
-    ['V', 'flight', 'Space', 'climb'],
-    ['T', 'sky', 'M', 'chart'],
+    ['Space', 'climb', 'Ctrl', 'dive'],
+    ['T', 'sky', 'G', 'pull up'],
   ];
   const cwid = 176, chgt = 14 + lines.length * 17 + 6;
   const cx0 = W - 14 - cwid, cy0 = H - 14 - chgt;

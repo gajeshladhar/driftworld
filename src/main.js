@@ -1,21 +1,21 @@
 // ── Driftworld · main loop ──────────────────────────────────────────────────
 import * as THREE from 'three';
-import { LOCATIONS, ZOOM, CLASSES, CLASS_ORDER, BOAT, SKY, SHIP, ATMOSPHERES, RUN, WEATHER } from './config.js?v=d646eb69';
-import { makeFrame, lonLatToMerc, mercToLonLat, mercToTile } from './geo.js?v=d646eb69';
-import { TileStore } from './tiles.js?v=d646eb69';
-import { Terrain } from './terrain.js?v=d646eb69';
-import { Player } from './player.js?v=d646eb69';
-import { PixelPass } from './pixel.js?v=d646eb69';
-import { makeSky, HORIZON } from './sky.js?v=d646eb69';
-import { makeShip, updateShip } from './ship.js?v=d646eb69';
-import { Minimap } from './minimap.js?v=d646eb69';
-import { Nav } from './nav.js?v=d646eb69';
-import { Run } from './objectives.js?v=d646eb69';
-import { Places } from './places.js?v=d646eb69';
-import { Weather } from './weather.js?v=d646eb69';
-import { Clouds } from './clouds.js?v=d646eb69';
-import { Cinema } from './cinema.js?v=d646eb69';
-import { disposeProps } from './props.js?v=d646eb69';
+import { LOCATIONS, ZOOM, CLASSES, CLASS_ORDER, BOAT, SKY, SHIP, ATMOSPHERES, RUN, WEATHER } from './config.js?v=969ac6ad';
+import { makeFrame, lonLatToMerc, mercToLonLat, mercToTile } from './geo.js?v=969ac6ad';
+import { TileStore } from './tiles.js?v=969ac6ad';
+import { Terrain } from './terrain.js?v=969ac6ad';
+import { Player } from './player.js?v=969ac6ad';
+import { PixelPass } from './pixel.js?v=969ac6ad';
+import { makeSky, HORIZON } from './sky.js?v=969ac6ad';
+import { makeShip, updateShip } from './ship.js?v=969ac6ad';
+import { Minimap } from './minimap.js?v=969ac6ad';
+import { Nav } from './nav.js?v=969ac6ad';
+import { Run } from './objectives.js?v=969ac6ad';
+import { Places } from './places.js?v=969ac6ad';
+import { Weather } from './weather.js?v=969ac6ad';
+import { Clouds } from './clouds.js?v=969ac6ad';
+import { Cinema } from './cinema.js?v=969ac6ad';
+import { disposeProps } from './props.js?v=969ac6ad';
 
 const $ = (id) => document.getElementById(id);
 
@@ -114,13 +114,7 @@ class Game {
       for (let dx = -1; dx <= 1; dx++) jobs.push(this.store.request(cx + dx, cy + dy));
     await Promise.all(jobs);
 
-    const spawn = this.store.findWaterNear(mx0, my0, 260);
-    if (!spawn) {
-      this.setStatus('No water class within range here — pick another location.', true);
-      return false;
-    }
-
-    this.player = new Player(this.store, this.frame, spawn[0], spawn[1]);
+    this.player = new Player(this.store, this.frame, mx0, my0);
     if (this.weather?.data) this.player.setWind(this.weather.data.wind, this.weather.data.windDir);
     this.ship = makeShip();
     // Aircraft order: roll in local frame, pitch about the yawed lateral axis,
@@ -133,7 +127,7 @@ class Game {
 
     this.minimap = new Minimap($('map'), this.store, this.frame);
     this.run = new Run(this.store, this.frame);
-    this.nav = new Nav(this.scene, this.store, this.frame, (b) => this.run.reachBeacon(b));
+    this.nav = new Nav(this.scene, this.store, this.frame, () => this.run.collect());
     this.nav.ensure(this.player);
 
     this.places = new Places(this.scene, this.frame, this.store);
@@ -183,11 +177,7 @@ class Game {
   bindKeys() {
     window.addEventListener('keydown', (e) => {
       if (KEYS[e.code]) { input[KEYS[e.code]] = 1; e.preventDefault(); }
-      if (e.code === 'KeyV') { this.player.toggleMode(); e.preventDefault(); }
-      if (e.code === 'KeyG') {
-        const w = this.store.findWaterNear(this.player.mx, this.player.my, 400);
-        if (w) { this.player.mx = w[0]; this.player.my = w[1]; this.player.speed = 0; }
-      }
+      if (e.code === 'KeyG') this.player.recover();   // emergency pull-up
       if (e.code === 'KeyM') $('mapwrap').classList.toggle('hidden');
       if (e.code === 'KeyT') this.applyAtmosphere(this.atmo + 1);
     });
@@ -251,12 +241,11 @@ class Game {
       for (let dx = -1; dx <= 1; dx++) jobs.push(this.store.request(cx + dx, cy + dy));
     await Promise.all(jobs);
 
-    const spawn = this.store.findWaterNear(mx0, my0, 320) || [mx0, my0];
-    this.player = new Player(this.store, this.frame, spawn[0], spawn[1]);
+    this.player = new Player(this.store, this.frame, mx0, my0);
     this.terrain.update(this.player.mx, this.player.my);
 
     this.minimap = new Minimap($('map'), this.store, this.frame);
-    this.nav = new Nav(this.scene, this.store, this.frame, (b) => this.run.reachBeacon(b));
+    this.nav = new Nav(this.scene, this.store, this.frame, () => this.run.collect());
     this.nav.ensure(this.player);
     this.places = new Places(this.scene, this.frame, this.store);
     this.places.onRegion = (label) => this.run.toast(label.toUpperCase(), 'rank');
@@ -328,10 +317,7 @@ class Game {
     this.nav.reached = 0;
     this.nav.ensure(this.player);
     this.player.speed = 0;
-    if (!this.store.isWaterAtMerc(this.player.mx, this.player.my)) {
-      const w = this.store.findWaterNear(this.player.mx, this.player.my, 400);
-      if (w) { this.player.mx = w[0]; this.player.my = w[1]; }
-    }
+    this.player.recover();
     $('over').classList.add('hidden');
   }
 
@@ -455,15 +441,19 @@ class Game {
     const dt = Math.min(this.clock.getDelta(), 0.05);
     const p = this.player;
 
-    // No power means no thrust — the hull keeps its momentum and coasts.
-    const dead = this.run.over || this.run.powerless;
-    const src = this.cinema ? this.cinema.update(dt) : input;
-    const live = dead
+    // ?test=crash flies the craft straight down, to exercise impact handling
+    if (this.crashTest === undefined) {
+      this.crashTest = new URLSearchParams(location.search).get('test') === 'crash';
+    }
+    const src = this.crashTest ? { ...input, fwd: 1, down: 1 }
+              : this.cinema ? this.cinema.update(dt) : input;
+    const live = this.run.over
       ? { ...src, fwd: 0, back: 0, boost: 0, up: 0, down: 0 }
       : src;
 
-    this.run.update(dt, p, live);
     p.update(dt, live);
+    this.run.update(dt, p);
+    if (p.crashed) this.run.crash(this.store.classAtMerc(p.mx, p.my));
     this.terrain.update(p.mx, p.my);
     this.terrain.setTime(this.clock.elapsedTime);
 
@@ -530,12 +520,12 @@ class Game {
       const d = target.dist;
       $('r-wp').textContent = d > 1000 ? `${(d / 1000).toFixed(2)} km` : `${d.toFixed(0)} m`;
     } else {
-      $('r-wp').textContent = 'searching…';
+      $('r-wp').textContent = 'scanning…';
     }
     this.drawCompass(headingDeg, bearing);
 
     $('r-pos').textContent  = `${lat.toFixed(5)}°, ${lon.toFixed(5)}°`;
-    $('r-mode').textContent = p.mode === 'boat' ? (input.boost ? 'CRUISE · BOOST' : 'CRUISE') : 'FLIGHT';
+    $('r-mode').textContent = input.boost ? 'FLIGHT · BOOST' : 'FLIGHT';
     $('r-spd').textContent  = `${kmh.toFixed(0)} km/h`;
     $('r-alt').textContent  = `${(p.y / 1.8).toFixed(0)} m`;
     $('r-cls').textContent  = cls;
@@ -551,48 +541,44 @@ class Game {
     }
     $('r-region').textContent = this.places.region?.label ?? 'locating…';
     const warnEl = $('warn');
-    if (run.powerless) {
-      warnEl.textContent = 'POWER LOST — DRIFTING, RECHARGING FROM WATER';
-      warnEl.classList.remove('hidden');
-    } else if (p.mode === 'boat' && p.blocked) {
-      warnEl.textContent = 'NO NAVIGABLE WATER AHEAD';
+    if (!run.over && p.agl < 90) {
+      warnEl.textContent = 'PULL UP';
       warnEl.classList.remove('hidden');
     } else {
       warnEl.classList.add('hidden');
     }
 
     // ── mission bar ──
-    const pct = (run.energy / RUN.energyMax) * 100;
-    $('m-score').textContent = run.score.toLocaleString();
+    $('m-score').textContent = `${run.km.toFixed(2)} km`;
     $('m-rank').textContent = run.rank;
-    const arrow = run.charging ? '▲' : (run.trend < -0.05 ? '▼' : '·');
-    $('m-energy').textContent = `${pct.toFixed(0)}% ${arrow}`;
-    $('m-energy').classList.toggle('charging', run.charging);
-    $('energyFill').style.width = `${pct}%`;
-    $('energy').classList.toggle('low', pct < RUN.lowWarn && !run.charging);
-    $('energy').classList.toggle('charging', run.charging);
-    $('m-beacons').textContent = `${run.beacons} SURVEYED`;
+
+    // lives as pips, so nine reads at a glance without counting
+    const pips = $('lives');
+    if (pips.childElementCount !== RUN.lives) {
+      pips.innerHTML = Array.from({ length: RUN.lives }, () => '<i></i>').join('');
+    }
+    [...pips.children].forEach((el, i) => {
+      el.className = i < run.lives ? (run.lives <= 2 ? 'on low' : 'on') : '';
+    });
+    $('m-lives').textContent = `${run.lives} / ${RUN.lives}`;
+    $('m-beacons').textContent = `${run.cells} COLLECTED`;
 
     const prog = run.progress();
     $('m-nextlabel').textContent = prog.next ? `NEXT · ${prog.next}` : 'MAX RANK';
     $('rankFill').style.width = `${Math.min(100, prog.frac * 100)}%`;
 
-    const chainEl = $('m-chain');
-    if (run.chain > 1) {
-      chainEl.textContent = `CHAIN x${run.chain.toFixed(1)}  ${run.chainLeft.toFixed(0)}s`;
-      chainEl.classList.toggle('hot', run.chain >= 3);
-    } else {
-      chainEl.textContent = '';
-      chainEl.classList.remove('hot');
-    }
+    // altitude margin over whatever is directly below
+    const clr = $('m-clear');
+    clr.textContent = `${Math.max(0, p.agl).toFixed(0)} m clear`;
+    clr.classList.toggle('tight', p.agl < 140);
 
     if (run.over) {
       const mins = Math.floor(run.elapsed / 60);
       const secs = Math.floor(run.elapsed % 60).toString().padStart(2, '0');
-      $('o-score').textContent = run.score.toLocaleString();
+      $('o-score').textContent = `${run.km.toFixed(2)} km`;
       $('o-rank').textContent = run.rank;
-      $('o-beacons').textContent = run.beacons;
-      $('o-dist').textContent = `${(run.distance / 1000).toFixed(1)} km`;
+      $('o-beacons').textContent = `${run.cells} cells · ${run.crashes} impacts`;
+      $('o-dist').textContent = `${(run.best / 1000).toFixed(2)} km`;
       $('o-time').textContent = `${mins}:${secs}`;
     }
   }
