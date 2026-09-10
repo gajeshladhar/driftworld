@@ -1,22 +1,21 @@
 // ── Driftworld · main loop ──────────────────────────────────────────────────
 import * as THREE from 'three';
-import { LOCATIONS, ZOOM, CLASSES, CLASS_ORDER, BOAT, SKY, SHIP, ATMOSPHERES, RUN, WEATHER } from './config.js?v=cc9cefc5';
-import { makeFrame, lonLatToMerc, mercToLonLat, mercToTile } from './geo.js?v=cc9cefc5';
-import { TileStore } from './tiles.js?v=cc9cefc5';
-import { Terrain } from './terrain.js?v=cc9cefc5';
-import { Player } from './player.js?v=cc9cefc5';
-import { PixelPass } from './pixel.js?v=cc9cefc5';
-import { makeSky, HORIZON } from './sky.js?v=cc9cefc5';
-import { makeShip, updateShip } from './ship.js?v=cc9cefc5';
-import { Minimap } from './minimap.js?v=cc9cefc5';
-import { Nav } from './nav.js?v=cc9cefc5';
-import { Run } from './objectives.js?v=cc9cefc5';
-import { Places } from './places.js?v=cc9cefc5';
-import { Weather } from './weather.js?v=cc9cefc5';
-import { Clouds } from './clouds.js?v=cc9cefc5';
-import { Combat } from './combat.js?v=cc9cefc5';
-import { Cinema } from './cinema.js?v=cc9cefc5';
-import { disposeProps } from './props.js?v=cc9cefc5';
+import { LOCATIONS, ZOOM, CLASSES, CLASS_ORDER, BOAT, SKY, SHIP, ATMOSPHERES, RUN, WEATHER } from './config.js?v=969ac6ad';
+import { makeFrame, lonLatToMerc, mercToLonLat, mercToTile } from './geo.js?v=969ac6ad';
+import { TileStore } from './tiles.js?v=969ac6ad';
+import { Terrain } from './terrain.js?v=969ac6ad';
+import { Player } from './player.js?v=969ac6ad';
+import { PixelPass } from './pixel.js?v=969ac6ad';
+import { makeSky, HORIZON } from './sky.js?v=969ac6ad';
+import { makeShip, updateShip } from './ship.js?v=969ac6ad';
+import { Minimap } from './minimap.js?v=969ac6ad';
+import { Nav } from './nav.js?v=969ac6ad';
+import { Run } from './objectives.js?v=969ac6ad';
+import { Places } from './places.js?v=969ac6ad';
+import { Weather } from './weather.js?v=969ac6ad';
+import { Clouds } from './clouds.js?v=969ac6ad';
+import { Cinema } from './cinema.js?v=969ac6ad';
+import { disposeProps } from './props.js?v=969ac6ad';
 
 const $ = (id) => document.getElementById(id);
 
@@ -41,11 +40,11 @@ const SUN = new THREE.Vector3(...SKY.sun).normalize();
 const DEG = 180 / Math.PI;
 const CARDINALS = ['N','NE','E','SE','S','SW','W','NW'];
 
-const input = { fwd: 0, back: 0, left: 0, right: 0, up: 0, down: 0, boost: 0, fire: 0 };
+const input = { fwd: 0, back: 0, left: 0, right: 0, up: 0, down: 0, boost: 0 };
 const KEYS = {
   KeyW: 'fwd',  ArrowUp: 'fwd',    KeyS: 'back',  ArrowDown: 'back',
   KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right',
-  Space: 'up',  KeyR: 'up',        KeyF: 'fire',
+  Space: 'up',  KeyR: 'up',        KeyF: 'down',
   ControlLeft: 'down', ControlRight: 'down',
   ShiftLeft: 'boost',  ShiftRight: 'boost',
 };
@@ -86,7 +85,6 @@ class Game {
     this.scene.add(this.hemi);
 
     this.clouds = new Clouds(this.scene);
-    this.combat = new Combat(this.scene);
 
     this.terrain = new Terrain(this.scene, this.store, this.frame);
     this.terrain.base.uniforms.uSunDir.value.copy(SUN);
@@ -320,7 +318,6 @@ class Game {
     this.nav.ensure(this.player);
     this.player.speed = 0;
     this.player.recover();
-    this.combat.reset();
     $('over').classList.add('hidden');
   }
 
@@ -440,28 +437,6 @@ class Game {
     }
   }
 
-  _probe(dt) {
-    if (this.probeAt === undefined) {
-      const v = parseFloat(new URLSearchParams(location.search).get('probe'));
-      this.probeAt = isFinite(v) ? v : null;
-      this.probeT = 0;
-    }
-    if (this.probeAt === null) return;
-    this.probeT += dt;
-    if (this.probeT < this.probeAt) return;
-    this.probeAt = null;
-    const c = this.combat, r = this.run;
-    fetch('/upload?name=probe.json', {
-      method: 'POST',
-      body: JSON.stringify({
-        t: +this.probeT.toFixed(1), lives: r.lives, km: +r.km.toFixed(3),
-        jets: c.jets.length, missiles: c.missiles.length, kills: c.kills,
-        nearestMissile: isFinite(c.nearest) ? Math.round(c.nearest) : null,
-        crashes: r.crashes, over: r.over,
-      }, null, 1),
-    }).catch(() => {});
-  }
-
   _tick() {
     const dt = Math.min(this.clock.getDelta(), 0.05);
     const p = this.player;
@@ -479,12 +454,6 @@ class Game {
     p.update(dt, live);
     this.run.update(dt, p);
     if (p.crashed) this.run.crash(this.store.classAtMerc(p.mx, p.my));
-
-    const struck = this.combat.update(dt, p, this.run.over ? {} : live);
-    if (struck && p.invuln <= 0 && !this.run.over) {
-      this.run.crash('MISSILE');
-      p.recover();
-    }
     this.terrain.update(p.mx, p.my);
     this.terrain.setTime(this.clock.elapsedTime);
 
@@ -528,7 +497,6 @@ class Game {
     }
 
     if (this.cinema) this.cinema.postRender();
-    this._probe(dt);
     this.flushToasts();
     if (this.run.over) $('over').classList.remove('hidden');
 
@@ -572,17 +540,8 @@ class Game {
       $('wx-arrow').style.transform = `rotate(${rel}deg)`;
     }
     $('r-region').textContent = this.places.region?.label ?? 'locating…';
-    const c = this.combat;
-    $('r-threat').textContent = c.jets.length
-      ? `${c.jets.length} jet${c.jets.length > 1 ? 's' : ''}${c.incoming ? ` · ${c.incoming} inbound` : ''}`
-      : 'clear';
-    $('r-threat').style.color = c.incoming ? '#ff7a6a' : (c.jets.length ? '#ffd27f' : '#8ea6b8');
-
     const warnEl = $('warn');
-    if (!run.over && c.incoming && c.nearest < 900) {
-      warnEl.textContent = 'MISSILE INBOUND — BREAK';
-      warnEl.classList.remove('hidden');
-    } else if (!run.over && p.agl < 90) {
+    if (!run.over && p.agl < 90) {
       warnEl.textContent = 'PULL UP';
       warnEl.classList.remove('hidden');
     } else {
@@ -602,7 +561,7 @@ class Game {
       el.className = i < run.lives ? (run.lives <= 2 ? 'on low' : 'on') : '';
     });
     $('m-lives').textContent = `${run.lives} / ${RUN.lives}`;
-    $('m-beacons').textContent = `${run.cells} CELLS · ${this.combat.kills} KILLS`;
+    $('m-beacons').textContent = `${run.cells} COLLECTED`;
 
     const prog = run.progress();
     $('m-nextlabel').textContent = prog.next ? `NEXT · ${prog.next}` : 'MAX RANK';

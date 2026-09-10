@@ -193,35 +193,3 @@ export const CELLS = {
   aboveGround: 320,      // floats this far over the terrain beneath it
   beaconHeight: 90,
 };
-
-// ── Combat ──────────────────────────────────────────────────────────────────
-// Missiles are faster than the craft can ever fly, so outrunning one is not an
-// option; they turn worse than you do, which makes a hard break the answer.
-export const ENEMY = {
-  maxActive:   3,
-  firstWave:   14,      // seconds of quiet before the first contact
-  spawnEvery:  11,
-  spawnRange:  3000,
-  speed:       300,
-  turnRate:    0.85,
-  standoff:    750,     // tries to hold this range rather than ram you
-  fireEvery:   3.6,
-  fireRange:   2400,
-  health:      2,
-  despawn:     7000,
-};
-
-export const MISSILE = {
-  speed:      880,      // faster than boost, so distance alone will not save you
-  turnRate:   0.9,      // radius = speed/turnRate ~ 980 m, wider than the craft's ~700
-  life:       7.5,
-  hitRadius:  62,
-  armAfter:   0.35,
-};
-
-export const GUN = {
-  speed:      1500,
-  life:       1.5,
-  cooldown:   0.14,
-  hitRadius:  60,
-};

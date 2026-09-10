@@ -1,7 +1,7 @@
 // ── The run: fly as far as you can ──────────────────────────────────────────
 // Distance is the whole score. Terrain, buildings and forest are the only
 // things that can end it, and you have nine lives plus whatever you collect.
-import { RUN } from './config.js?v=cc9cefc5';
+import { RUN } from './config.js?v=969ac6ad';
 
 export class Run {
   constructor(store, frame) {
