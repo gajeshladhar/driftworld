@@ -1,22 +1,22 @@
 // ── Driftworld · main loop ──────────────────────────────────────────────────
 import * as THREE from 'three';
-import { LOCATIONS, ZOOM, CLASSES, CLASS_ORDER, BOAT, SKY, SHIP, ATMOSPHERES, RUN, WEATHER } from './config.js?v=cc9cefc5';
-import { makeFrame, lonLatToMerc, mercToLonLat, mercToTile } from './geo.js?v=cc9cefc5';
-import { TileStore } from './tiles.js?v=cc9cefc5';
-import { Terrain } from './terrain.js?v=cc9cefc5';
-import { Player } from './player.js?v=cc9cefc5';
-import { PixelPass } from './pixel.js?v=cc9cefc5';
-import { makeSky, HORIZON } from './sky.js?v=cc9cefc5';
-import { makeShip, updateShip } from './ship.js?v=cc9cefc5';
-import { Minimap } from './minimap.js?v=cc9cefc5';
-import { Nav } from './nav.js?v=cc9cefc5';
-import { Run } from './objectives.js?v=cc9cefc5';
-import { Places } from './places.js?v=cc9cefc5';
-import { Weather } from './weather.js?v=cc9cefc5';
-import { Clouds } from './clouds.js?v=cc9cefc5';
-import { Combat } from './combat.js?v=cc9cefc5';
-import { Cinema } from './cinema.js?v=cc9cefc5';
-import { disposeProps } from './props.js?v=cc9cefc5';
+import { LOCATIONS, ZOOM, CLASSES, CLASS_ORDER, BOAT, SKY, SHIP, ATMOSPHERES, RUN, WEATHER } from './config.js?v=d8439539';
+import { makeFrame, lonLatToMerc, mercToLonLat, mercToTile } from './geo.js?v=d8439539';
+import { TileStore } from './tiles.js?v=d8439539';
+import { Terrain } from './terrain.js?v=d8439539';
+import { Player } from './player.js?v=d8439539';
+import { PixelPass } from './pixel.js?v=d8439539';
+import { makeSky, HORIZON } from './sky.js?v=d8439539';
+import { makeShip, updateShip } from './ship.js?v=d8439539';
+import { Minimap } from './minimap.js?v=d8439539';
+import { Nav } from './nav.js?v=d8439539';
+import { Run } from './objectives.js?v=d8439539';
+import { Places } from './places.js?v=d8439539';
+import { Weather } from './weather.js?v=d8439539';
+import { Clouds } from './clouds.js?v=d8439539';
+import { Combat } from './combat.js?v=d8439539';
+import { Cinema } from './cinema.js?v=d8439539';
+import { disposeProps } from './props.js?v=d8439539';
 
 const $ = (id) => document.getElementById(id);
 

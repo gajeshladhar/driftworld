@@ -198,30 +198,35 @@ export const CELLS = {
 // Missiles are faster than the craft can ever fly, so outrunning one is not an
 // option; they turn worse than you do, which makes a hard break the answer.
 export const ENEMY = {
-  maxActive:   3,
-  firstWave:   14,      // seconds of quiet before the first contact
-  spawnEvery:  11,
-  spawnRange:  3000,
-  speed:       300,
-  turnRate:    0.85,
-  standoff:    750,     // tries to hold this range rather than ram you
-  fireEvery:   3.6,
-  fireRange:   2400,
+  maxActive:   2,
+  firstWave:   16,      // seconds of quiet before the first contact
+  spawnEvery:  13,
+  spawnRange:  3400,
+  spawnSpread: 0.85,    // radians either side of dead ahead
+  speed:       340,
+  turnRate:    0.9,
+  standoff:    900,
+  fireEvery:   4.6,
+  fireRange:   2100,
   health:      2,
-  despawn:     7000,
+  despawn:     7500,
+  scale:       2.4,     // the craft is ~50 units; a jet must read at 2 km
 };
 
+// Slower than the craft at full boost, so running is a real option, and with a
+// turn radius (speed/turnRate) wider than yours, so breaking works too.
 export const MISSILE = {
-  speed:      880,      // faster than boost, so distance alone will not save you
-  turnRate:   0.9,      // radius = speed/turnRate ~ 980 m, wider than the craft's ~700
-  life:       7.5,
-  hitRadius:  62,
-  armAfter:   0.35,
+  speed:      470,
+  turnRate:   0.55,     // radius ~855 m against the craft's ~700
+  life:       8.5,
+  hitRadius:  46,
+  armAfter:   0.4,
+  scale:      2.2,
 };
 
 export const GUN = {
   speed:      1500,
   life:       1.5,
   cooldown:   0.14,
-  hitRadius:  60,
+  hitRadius:  70,
 };

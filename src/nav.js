@@ -2,7 +2,7 @@
 // These float in open air rather than sitting on the ground, because the craft
 // can no longer land — a pickup you cannot reach without crashing is a trap.
 import * as THREE from 'three';
-import { CELLS, VERTICAL_EXAGGERATION } from './config.js?v=cc9cefc5';
+import { CELLS, VERTICAL_EXAGGERATION } from './config.js?v=d8439539';
 
 const COL = 0x3dffa8;
 const COL_NEXT = 0xffd24a;
