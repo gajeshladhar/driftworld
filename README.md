@@ -19,7 +19,30 @@ says it is water — the boat physics read the same pixels you are looking at.
 </tr>
 </table>
 
-## Running it
+## Hosting it
+
+It is a static site — HTML, ES modules and one vendored copy of Three.js. Drop
+it on GitHub Pages, Netlify, Vercel or any static host and it runs in the
+visitor's browser with no backend.
+
+All four data sources are public, HTTPS and CORS-clean from an arbitrary
+origin (ESRI reflects the requesting origin; the rest send `*`), so nothing
+needs proxying:
+
+| | |
+|---|---|
+| `ic.imagery1.arcgis.com` | Sentinel-2 10 m land cover |
+| `s3.amazonaws.com` | Terrarium 30 m DEM |
+| `api.bigdatacloud.net` | reverse geocode for the region readout |
+| `overpass-api.de` | place labels |
+
+Caveats worth knowing before you point a crowd at it: **desktop only** (there
+are no touch controls, and it is keyboard-driven), it is **GPU-hungry** at the
+default full-resolution render — `PIXEL_SCALE` in `src/config.js` is the dial —
+and **Overpass is a shared community service**, so heavy traffic will get
+throttled. Labels fail silently when it does; nothing else breaks.
+
+## Running it locally
 
     python serve.py          # then open http://127.0.0.1:8137/
 

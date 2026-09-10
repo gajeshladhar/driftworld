@@ -23,9 +23,10 @@ function pickMime() {
 }
 
 export class Cinema {
-  constructor(game, seconds = 30) {
+  constructor(game, seconds = 30, withHud = false) {
     this.game = game;
     this.seconds = seconds;
+    this.withHud = withHud;   // capture the whole tab so the DOM HUD is in frame
     this.t = 0;
     this.state = 'settling';    // settling -> recording -> done
     this.settle = 0;
@@ -37,6 +38,9 @@ export class Cinema {
 
   _report(text) {
     this.status = text;
+    // When the tab itself is being recorded, this overlay would end up burned
+    // into the video. Keep it to the console in that mode.
+    if (this.withHud) { console.log('[cinema] ' + text); return; }
     let el = document.getElementById('cinema-status');
     if (!el) {
       el = document.createElement('div');
@@ -172,16 +176,41 @@ export class Cinema {
     g.camera.lookAt(new THREE.Vector3(wx + fx * lead, p.y + high * 0.18, wz + fz * lead));
   }
 
-  _startRecording() {
+  async _startRecording() {
     const mime = pickMime();
     if (!mime) { this._report('MediaRecorder unavailable'); this.state = 'done'; return; }
     this.mime = mime;
     this.ext = mime.startsWith('video/mp4') ? 'mp4' : 'webm';
 
-    const stream = this.game.renderer.domElement.captureStream(30);
-    this.rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 14_000_000 });
+    // The HUD is DOM, so a canvas stream cannot see it. Capturing the tab
+    // itself picks up canvas and overlay together.
+    let stream;
+    if (this.withHud) {
+      try {
+        stream = await navigator.mediaDevices.getDisplayMedia({
+          video: { frameRate: 30, width: 1600, height: 900 },
+          audio: false,
+          preferCurrentTab: true,
+          selfBrowserSurface: 'include',
+        });
+      } catch (err) {
+        this._report('tab capture refused: ' + err + ' — falling back to canvas');
+      }
+    }
+    this.source = stream ? 'tab' : 'canvas';
+    if (!stream) stream = this.game.renderer.domElement.captureStream(30);
+    // Flat-shaded terrain and a static HUD compress well, so a tab capture
+    // does not need the headroom a detailed scene would.
+    const bitrate = this.withHud ? 6_200_000 : 12_000_000;
+    this.rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: bitrate });
     this.rec.ondataavailable = (e) => { if (e.data.size) this.chunks.push(e.data); };
     this.rec.onstop = () => this._upload();
+    // Pull stills from the capture track itself, so the review frames show
+    // exactly what the recording sees rather than just the canvas.
+    const track = stream.getVideoTracks()[0];
+    if (this.withHud && track && window.ImageCapture) {
+      try { this._grab = new ImageCapture(track); } catch { /* not available */ }
+    }
     this.rec.start(500);
     this.shotAt = [0.12, 0.34, 0.55, 0.78, 0.95].map((f) => f * this.seconds);
     this.state = 'recording';
@@ -190,13 +219,29 @@ export class Cinema {
 
   async _upload() {
     const blob = new Blob(this.chunks, { type: this.mime });
-    const name = `driftworld.${this.ext}`;
+    const name = `driftworld-${this.source || 'canvas'}.${this.ext}`;
+
+    // The dev server accepts POST /upload. On a static host it does not exist,
+    // so hand the clip to the browser as a download instead.
+    let saved = false;
     try {
-      await fetch('/upload?name=' + encodeURIComponent(name), { method: 'POST', body: blob });
-      this._report(`SAVED ${name} ${(blob.size / 1e6).toFixed(1)}MB frames=${this.frames}`);
-    } catch (err) {
-      this._report('upload failed: ' + err);
+      const r = await fetch('/upload?name=' + encodeURIComponent(name),
+                            { method: 'POST', body: blob });
+      saved = r.ok;
+    } catch { /* no dev server here */ }
+
+    if (!saved) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 15000);
     }
+    this._report(`${saved ? 'SAVED' : 'DOWNLOADED'} ${name} `
+               + `${(blob.size / 1e6).toFixed(1)}MB frames=${this.frames}`);
     this.state = 'done';
     document.title = 'CAPTURE_DONE';
   }
@@ -209,12 +254,22 @@ export class Cinema {
     if (this.state !== 'recording' || !this.shotAt) return;
     if (this.shotAt.length && this.t >= this.shotAt[0]) {
       const at = this.shotAt.shift();
-      this.game.renderer.domElement.toBlob((blob) => {
+      const send = (blob) => {
         if (blob) {
           fetch('/upload?name=' + encodeURIComponent(`shot-${Math.round(at)}s.png`),
-                { method: 'POST', body: blob });
+                { method: 'POST', body: blob }).catch(() => {});
         }
-      }, 'image/png');
+      };
+      if (this._grab) {
+        this._grab.grabFrame().then((bmp) => {
+          const c = document.createElement('canvas');
+          c.width = bmp.width; c.height = bmp.height;
+          c.getContext('2d').drawImage(bmp, 0, 0);
+          c.toBlob(send, 'image/png');
+        }).catch(() => this.game.renderer.domElement.toBlob(send, 'image/png'));
+      } else {
+        this.game.renderer.domElement.toBlob(send, 'image/png');
+      }
     }
   }
 
@@ -226,7 +281,10 @@ export class Cinema {
       const s = g.store.stats;
       this.settle += dt;
       this._report(`loading ${s.loaded} tiles, ${s.queued} queued`);
-      if (s.queued === 0 && s.loaded >= 24 && this.settle > 3) this._startRecording();
+      if (s.queued === 0 && s.loaded >= 24 && this.settle > 3) {
+        this.state = 'starting';
+        this._startRecording();
+      }
       return { ...this.input, fwd: 0, left: 0, right: 0 };
     }
 

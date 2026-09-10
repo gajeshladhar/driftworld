@@ -144,10 +144,12 @@ class Game {
     this.bindKeys();
     this.buildLegend();
 
-    const cineSecs = parseInt(new URLSearchParams(location.search).get('cinema'), 10);
+    const qp = new URLSearchParams(location.search);
+    const cineSecs = parseInt(qp.get('cinema'), 10);
     if (cineSecs) {
-      this.cinema = new Cinema(this, Math.min(120, Math.max(5, cineSecs)));
-      $('hud').classList.add('cinema-hidden');   // capture the canvas, not the HUD
+      const withHud = qp.get('hud') === '1';
+      this.cinema = new Cinema(this, Math.min(120, Math.max(5, cineSecs)), withHud);
+      if (!withHud) $('hud').classList.add('cinema-hidden');
       this.renderer.setPixelRatio(1);            // predictable capture size and cost
       this.onResize();
     }
