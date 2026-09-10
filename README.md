@@ -76,6 +76,11 @@ hitting something, and the terrain, the forest canopy and the city blocks are
 all real. Every impact costs one of nine lives; life cells drift in open air
 along the route to give one back.
 
+You are also hunted. Jets close from behind and fire homing missiles, and a
+missile costs a life too. A missile is faster than the craft can ever fly, so
+running is pointless - but its turn radius is wider than yours, so breaking
+hard across its nose makes it overshoot. `F` shoots back; two hits kill a jet.
+
 ## Controls
 
 | Key | |
@@ -86,6 +91,7 @@ along the route to give one back.
 | `Shift` | boost |
 | `Space` | climb |
 | `Ctrl` | dive |
+| `F` | fire |
 | `G` | emergency pull-up |
 | `T` | cycle time of day |
 | `M` | toggle chart |
@@ -182,6 +188,12 @@ ground is effectively 96 units higher, over Trees 34 - so the classification
 that draws the world also decides what you can hit. Collision samples under the
 nose as well as the hull, because at 200 m/s the craft covers its own length
 between frames and a centre-only test flies straight through ridge lines.
+
+**The missile fight is one number.** Turn radius is speed over turn rate, so
+the missile's 880 m/s at 0.9 rad/s gives ~980 m against the craft's ~700 m: you
+out-turn it, and that is the entire counter. The first version steered by
+lerping toward the target, which turns *fastest* when the error is largest -
+the missile whipped round and beat any break. It is a hard rate limit now.
 
 **Weather is real, and it drives the world rather than a readout.** Live wave
 height and period set the water shader's amplitude and speed, cloud cover

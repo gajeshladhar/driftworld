@@ -7,7 +7,7 @@
 //
 // Values are read from the live DOM rather than recomputed, so what is
 // recorded always matches what the player sees.
-import { CLASS_ORDER, CLASSES } from './config.js?v=969ac6ad';
+import { CLASS_ORDER, CLASSES } from './config.js?v=cc9cefc5';
 
 const MONO = 'ui-monospace, Menlo, Consolas, monospace';
 const INK = '#e8f1f7', DIM = '#8ea6b8', FAINT = '#5f7688', ACCENT = '#38e8ff', GOLD = '#ffd24a';
