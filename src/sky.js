@@ -31,7 +31,7 @@ export function makeSky(sunDir) {
         vec3 d = normalize(vDir);
         float h = clamp(d.y, 0.0, 1.0);
         // quantise the gradient into visible bands
-        float b = floor(pow(h, 0.6) * 16.0) / 16.0;
+        float b = floor(pow(h, 0.6) * 34.0) / 34.0;
         vec3 col = b < 0.42
           ? mix(uHorizon, uMid, b / 0.42)
           : mix(uMid, uTop, (b - 0.42) / 0.58);

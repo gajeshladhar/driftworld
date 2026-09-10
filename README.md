@@ -5,19 +5,20 @@
 An alien craft on the real Earth. You can only travel where the satellite says
 there is water.
 
-![Storfjorden, Norway](capture/shot-10s.png)
+![Lysefjord, Norway](capture/still-lysefjord.png)
 
 Everything you fly over is real data: land cover comes from ESRI / Impact
 Observatory's Sentinel-2 10 m classification, elevation from 30 m DEM tiles, and
 the place names from OpenStreetMap. Water is navigable because the classifier
 says it is water — the boat physics read the same pixels you are looking at.
 
-**[30-second flythrough](capture/driftworld-tab.mp4)** (MP4, 1600x900)
+**[60-second showreel](capture/driftworld-hud.mp4)** - Lofoten, Geirangerfjord,
+Lysefjord and Lago di Como in one continuous take (MP4, 1920x1080)
 
 <table>
 <tr>
-<td><img src="capture/shot-17s.png" alt="Flying the fjord"></td>
-<td><img src="capture/shot-29s.png" alt="Above the ridgelines"></td>
+<td><img src="capture/still-lysefjord.png" alt="Lysefjord"></td>
+<td><img src="capture/still-como.png" alt="Lago di Como"></td>
 </tr>
 </table>
 
@@ -57,6 +58,7 @@ Query parameters:
 | `?lat=46.14&lon=9.30` | launch anywhere on Earth |
 | `?auto=1` | launch at a preset without clicking |
 | `?cinema=30` | fly a scripted 30 s take and record it |
+| `?cinema=13&reel=1&hud=1` | showreel across every REEL location, HUD included |
 
 ## Controls
 

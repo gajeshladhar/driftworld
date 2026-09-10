@@ -13,6 +13,7 @@ import { Nav } from './nav.js';
 import { Run } from './objectives.js';
 import { Places } from './places.js';
 import { Cinema } from './cinema.js';
+import { disposeProps } from './props.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -148,7 +149,8 @@ class Game {
     const cineSecs = parseInt(qp.get('cinema'), 10);
     if (cineSecs) {
       const withHud = qp.get('hud') === '1';
-      this.cinema = new Cinema(this, Math.min(120, Math.max(5, cineSecs)), withHud);
+      const reel = qp.get('reel') === '1';
+      this.cinema = new Cinema(this, Math.min(120, Math.max(5, cineSecs)), withHud, reel);
       if (!withHud) $('hud').classList.add('cinema-hidden');
       this.renderer.setPixelRatio(1);            // predictable capture size and cost
       this.onResize();
@@ -196,6 +198,58 @@ class Game {
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
     this.pixel.setSize(w, h);
+  }
+
+  /** Drop a whole world: meshes, textures, instanced scenery, labels, buoys. */
+  _wipeWorld() {
+    for (const k of [...this.store.tiles.keys()]) {
+      const t = this.store.tiles.get(k);
+      if (t) disposeProps(t.props);
+      this.store.dispose(k);
+    }
+    for (const g of [this.terrain?.group, this.places?.group]) {
+      if (!g) continue;
+      g.traverse((o) => {
+        o.geometry?.dispose?.();
+        if (o.material) {
+          for (const m of [].concat(o.material)) { m.map?.dispose?.(); m.dispose?.(); }
+        }
+      });
+      this.scene.remove(g);
+    }
+    if (this.nav) for (let i = this.nav.buoys.length - 1; i >= 0; i--) this.nav._remove(i);
+  }
+
+  /**
+   * Move the whole game to new coordinates without tearing down the renderer,
+   * so a recording in progress keeps running across the cut.
+   */
+  async relocate(loc) {
+    this._wipeWorld();
+    this.loc = loc;
+    this.frame = makeFrame(loc.lon, loc.lat);
+    this.store = new TileStore();
+
+    this.terrain = new Terrain(this.scene, this.store, this.frame);
+    this.applyAtmosphere(this.atmo);
+
+    const [mx0, my0] = lonLatToMerc(loc.lon, loc.lat);
+    const [cx, cy] = mercToTile(mx0, my0, ZOOM);
+    const jobs = [];
+    for (let dy = -1; dy <= 1; dy++)
+      for (let dx = -1; dx <= 1; dx++) jobs.push(this.store.request(cx + dx, cy + dy));
+    await Promise.all(jobs);
+
+    const spawn = this.store.findWaterNear(mx0, my0, 320) || [mx0, my0];
+    this.player = new Player(this.store, this.frame, spawn[0], spawn[1]);
+    this.terrain.update(this.player.mx, this.player.my);
+
+    this.minimap = new Minimap($('map'), this.store, this.frame);
+    this.nav = new Nav(this.scene, this.store, this.frame, (b) => this.run.reachBeacon(b));
+    this.nav.ensure(this.player);
+    this.places = new Places(this.scene, this.frame, this.store);
+    this.places.onRegion = (label) => this.run.toast(label.toUpperCase(), 'rank');
+    this.run.energy = 100;
   }
 
   applyAtmosphere(i) {

@@ -3,7 +3,8 @@
 // Only the WebGL canvas is captured, so the DOM HUD is hidden for the take and
 // the world's own place labels (which are sprites) still appear.
 import * as THREE from 'three';
-import { VERTICAL_EXAGGERATION } from './config.js';
+import { VERTICAL_EXAGGERATION, REEL } from './config.js';
+import { drawHudOverlay } from './hudcanvas.js';
 
 const angDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 
@@ -23,10 +24,18 @@ function pickMime() {
 }
 
 export class Cinema {
-  constructor(game, seconds = 30, withHud = false) {
+  constructor(game, seconds = 30, withHud = false, reel = false) {
     this.game = game;
-    this.seconds = seconds;
-    this.withHud = withHud;   // capture the whole tab so the DOM HUD is in frame
+    this.seconds = seconds;   // per segment when running a reel
+    this.withHud = withHud;
+    this.reel = reel;         // run every REEL location in one continuous take
+    this.segIdx = 0;
+    // On a reel each segment is short, and the low passes over water are the
+    // strongest shots, so spend most of the time there and only lift at the end.
+    this.phaseA = reel ? 0.60 : 0.37;
+    this.phaseB = reel ? 0.82 : 0.66;
+    this.fade = 0;            // 0 clear, 1 black
+    this.titleT = 0;
     this.t = 0;
     this.state = 'settling';    // settling -> recording -> done
     this.settle = 0;
@@ -130,7 +139,7 @@ export class Cinema {
       // whatever happens to be directly underneath — over a fjord that is sea
       // level, which leaves the craft down between the walls.
       const want = this._terrainCeiling()
-                 + (this.t < this.seconds * 0.66 ? 420 : 950);
+                 + (this.reel ? 150 : (this.t < this.seconds * this.phaseB ? 420 : 950));
       inp.up = p.y < want ? 1 : 0;
       inp.boost = p.y < want - 300 ? 1 : 0;    // get up there quickly
       inp.down = p.y > want * 1.22 ? 1 : 0;
@@ -149,8 +158,8 @@ export class Cinema {
     const p = g.player;
     const [wx, wz] = p.worldPos;
     const T = this.t;
-    const A = this.seconds * 0.37;      // leaves the water
-    const B = this.seconds * 0.66;      // tops out
+    const A = this.seconds * this.phaseA;   // leaves the water
+    const B = this.seconds * this.phaseB;   // tops out
 
     let back, high, lead;
     if (T < A) {
@@ -173,7 +182,10 @@ export class Cinema {
     if (gh !== null) pos.y = Math.max(pos.y, gh * 1.8 + 26);
 
     g.camera.position.lerp(pos, 1 - Math.exp(-dt * 3.2));
-    g.camera.lookAt(new THREE.Vector3(wx + fx * lead, p.y + high * 0.18, wz + fz * lead));
+    // Look below the craft, not level with it: the subject of the shot is the
+    // landscape, and a level lens fills most of the frame with empty sky.
+    const aim = T < A ? p.y + 4 : p.y - high * 0.42;
+    g.camera.lookAt(new THREE.Vector3(wx + fx * lead, aim, wz + fz * lead));
   }
 
   async _startRecording() {
@@ -182,23 +194,21 @@ export class Cinema {
     this.mime = mime;
     this.ext = mime.startsWith('video/mp4') ? 'mp4' : 'webm';
 
-    // The HUD is DOM, so a canvas stream cannot see it. Capturing the tab
-    // itself picks up canvas and overlay together.
+    // Composite the HUD onto a copy of the WebGL frame and record that.
+    // Tab capture does see the DOM directly, but in headless Chrome it yields a
+    // container whose declared duration is wrong, so players stop after a few
+    // seconds. Canvas capture has always produced correct files.
+    const gl = this.game.renderer.domElement;
     let stream;
     if (this.withHud) {
-      try {
-        stream = await navigator.mediaDevices.getDisplayMedia({
-          video: { frameRate: 30, width: 1600, height: 900 },
-          audio: false,
-          preferCurrentTab: true,
-          selfBrowserSurface: 'include',
-        });
-      } catch (err) {
-        this._report('tab capture refused: ' + err + ' — falling back to canvas');
-      }
+      this.out = document.createElement('canvas');
+      this.out.width = gl.width;
+      this.out.height = gl.height;
+      this.outCtx = this.out.getContext('2d');
+      stream = this.out.captureStream(30);
     }
-    this.source = stream ? 'tab' : 'canvas';
-    if (!stream) stream = this.game.renderer.domElement.captureStream(30);
+    this.source = this.out ? 'hud' : 'clean';
+    if (!stream) stream = gl.captureStream(30);
     // Flat-shaded terrain and a static HUD compress well, so a tab capture
     // does not need the headroom a detailed scene would.
     const bitrate = this.withHud ? 6_200_000 : 12_000_000;
@@ -207,10 +217,6 @@ export class Cinema {
     this.rec.onstop = () => this._upload();
     // Pull stills from the capture track itself, so the review frames show
     // exactly what the recording sees rather than just the canvas.
-    const track = stream.getVideoTracks()[0];
-    if (this.withHud && track && window.ImageCapture) {
-      try { this._grab = new ImageCapture(track); } catch { /* not available */ }
-    }
     this.rec.start(500);
     this.shotAt = [0.12, 0.34, 0.55, 0.78, 0.95].map((f) => f * this.seconds);
     this.state = 'recording';
@@ -251,25 +257,26 @@ export class Cinema {
    * intact. Lets the take be reviewed without decoding the video.
    */
   postRender() {
+    if (this.out && (this.state === 'recording' || this.state === 'cutting')) {
+      const W = this.out.width, H = this.out.height;
+      this.outCtx.drawImage(this.game.renderer.domElement, 0, 0);
+      if (this.withHud) drawHudOverlay(this.outCtx, W, H);
+      this._drawTitle(this.outCtx, W, H);
+      if (this.fade > 0) {
+        this.outCtx.fillStyle = `rgba(4,9,15,${this.fade})`;
+        this.outCtx.fillRect(0, 0, W, H);
+      }
+    }
     if (this.state !== 'recording' || !this.shotAt) return;
     if (this.shotAt.length && this.t >= this.shotAt[0]) {
       const at = this.shotAt.shift();
       const send = (blob) => {
         if (blob) {
-          fetch('/upload?name=' + encodeURIComponent(`shot-${Math.round(at)}s.png`),
+          fetch('/upload?name=' + encodeURIComponent(`shot-${this.segIdx}-${Math.round(at)}s.png`),
                 { method: 'POST', body: blob }).catch(() => {});
         }
       };
-      if (this._grab) {
-        this._grab.grabFrame().then((bmp) => {
-          const c = document.createElement('canvas');
-          c.width = bmp.width; c.height = bmp.height;
-          c.getContext('2d').drawImage(bmp, 0, 0);
-          c.toBlob(send, 'image/png');
-        }).catch(() => this.game.renderer.domElement.toBlob(send, 'image/png'));
-      } else {
-        this.game.renderer.domElement.toBlob(send, 'image/png');
-      }
+      (this.out || this.game.renderer.domElement).toBlob(send, 'image/png');
     }
   }
 
@@ -288,16 +295,66 @@ export class Cinema {
       return { ...this.input, fwd: 0, left: 0, right: 0 };
     }
 
+    if (this.state === 'cutting') return { ...this.input, fwd: 0, left: 0, right: 0 };
+
     if (this.state === 'recording') {
       this.frames++;
       this.t += dt;
+      this.titleT += dt;
       // lift off the water partway through for the aerial half
-      if (g.player.mode === 'boat' && this.t > this.seconds * 0.37) g.player.toggleMode();
-      if (this.t >= this.seconds) { this.state = 'stopping'; this.rec.stop(); }
+      if (g.player.mode === 'boat' && this.t > this.seconds * this.phaseA) g.player.toggleMode();
+      if (this.t >= this.seconds) {
+        if (this.reel && this.segIdx < REEL.length - 1) { this._nextSegment(); }
+        else { this.state = 'stopping'; this.rec.stop(); }
+      }
       return this._drive(dt);
     }
 
     return { ...this.input, fwd: 0, left: 0, right: 0 };
+  }
+
+  /** Cut to the next location behind a fade, without stopping the recorder. */
+  async _nextSegment() {
+    this.state = 'cutting';
+    const ease = (ms) => new Promise((r) => setTimeout(r, ms));
+    for (let i = 1; i <= 12; i++) { this.fade = i / 12; await ease(28); }
+
+    this.segIdx++;
+    const loc = REEL[this.segIdx];
+    await this.game.relocate(loc);
+    await ease(700);                       // let the first tiles settle
+
+    this.t = 0;
+    this.titleT = 0;
+    this.shotAt = [0.42, 0.8].map((f) => f * this.seconds);   // review each location
+    this.state = 'recording';
+    for (let i = 11; i >= 0; i--) { this.fade = i / 12; await ease(28); }
+    this.fade = 0;
+  }
+
+  /** Location title, fading in and out over the first seconds of a segment. */
+  _drawTitle(ctx, W, H) {
+    const loc = this.reel ? REEL[this.segIdx] : null;
+    if (!loc) return;
+    const t = this.titleT;
+    const a = t < 0.5 ? t / 0.5 : t > 4.2 ? Math.max(0, 1 - (t - 4.2) / 0.9) : 1;
+    if (a <= 0) return;
+    ctx.save();
+    ctx.globalAlpha = a;
+    const x = Math.round(W * 0.055), y = Math.round(H * 0.74);
+    ctx.fillStyle = '#38e8ff';
+    ctx.fillRect(x, y - 4, 3, 54);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.shadowColor = 'rgba(0,0,0,0.85)';
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `600 ${Math.round(H * 0.038)}px ui-monospace, Menlo, Consolas, monospace`;
+    ctx.fillText(loc.name, x + 16, y - 4);
+    ctx.fillStyle = 'rgba(200,222,236,0.92)';
+    ctx.font = `${Math.round(H * 0.017)}px ui-monospace, Menlo, Consolas, monospace`;
+    ctx.fillText(loc.sub, x + 16, y + Math.round(H * 0.042));
+    ctx.restore();
   }
 
   get drivesCamera() { return this.state === 'recording'; }

@@ -171,3 +171,12 @@ export const PLACES = {
   queryEvery:    5000,   // metres travelled before re-querying Overpass
   minQueryGapMs: 20000,  // hard floor between Overpass calls; it is a shared service
 };
+
+// ── Showreel: enclosed water with dramatic relief, northern hemisphere so the
+// fixed sun lights the terrain rather than back-lighting it. ────────────────
+export const REEL = [
+  { name: 'REINE',            sub: 'LOFOTEN, NORWAY',      lat: 67.9310, lon: 13.0890 },
+  { name: 'GEIRANGERFJORD',   sub: 'MORE OG ROMSDAL, NORWAY', lat: 62.1005, lon:  7.2050 },
+  { name: 'LYSEFJORD',        sub: 'ROGALAND, NORWAY',     lat: 59.0400, lon:  6.4600 },
+  { name: 'LAGO DI COMO',     sub: 'LOMBARDIA, ITALY',     lat: 46.1400, lon:  9.3000 },
+];
