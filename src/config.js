@@ -180,3 +180,9 @@ export const REEL = [
   { name: 'LYSEFJORD',        sub: 'ROGALAND, NORWAY',     lat: 59.0400, lon:  6.4600 },
   { name: 'LAGO DI COMO',     sub: 'LOMBARDIA, ITALY',     lat: 46.1400, lon:  9.3000 },
 ];
+
+// ── Live weather ────────────────────────────────────────────────────────────
+export const WEATHER = {
+  refreshKm: 25,      // refetch once you have travelled this far
+  windDrift: 0.12,    // hull drift per m/s of wind; enough to feel, not to strand
+};

@@ -22,6 +22,13 @@ Lysefjord and Lago di Como in one continuous take (MP4, 1920x1080)
 </tr>
 </table>
 
+## Deploying
+
+Run `python bump.py` before pushing. GitHub Pages serves assets with
+`Cache-Control: max-age=600` and no override, so without a version stamp a
+deploy leaves browsers running a mix of old and new modules for ten minutes -
+which looks exactly like a new feature silently not working.
+
 ## Hosting it
 
 It is a static site — HTML, ES modules and one vendored copy of Three.js. Drop
@@ -37,6 +44,8 @@ needs proxying:
 | `ic.imagery1.arcgis.com` | Sentinel-2 10 m land cover |
 | `s3.amazonaws.com` | Terrarium 30 m DEM |
 | `api.bigdatacloud.net` | reverse geocode for the region readout |
+| `api.open-meteo.com` | live weather at your coordinates |
+| `marine-api.open-meteo.com` | live sea state |
 | `overpass-api.de` | place labels |
 
 Caveats worth knowing before you point a crowd at it: **desktop only** (there

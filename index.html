@@ -71,6 +71,29 @@
   #r-region{color:var(--accent);max-width:190px;overflow:hidden;text-overflow:ellipsis;
         white-space:nowrap}
 
+  /* ---------- weather card ---------- */
+  #wx{top:246px;left:14px;width:300px;padding:12px 13px 11px;
+      display:grid;gap:9px;transition:opacity .4s}
+  #wx.pending{opacity:.35}
+  .wx-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+  #wx-temp{font-size:30px;line-height:.92;letter-spacing:-1px}
+  #wx-temp span{font-size:14px;color:var(--dim);letter-spacing:0}
+  .wx-right{text-align:right}
+  #wx-label{color:var(--accent);font-size:11px;letter-spacing:1.5px}
+  #wx-time{color:var(--faint);font-size:10px;letter-spacing:1px;margin-top:3px}
+  .wx-rows{display:grid;gap:6px;border-top:1px solid var(--edge);padding-top:9px}
+  .wx-row{display:flex;align-items:center;gap:9px;font-size:11px}
+  .wx-row .k{color:var(--faint);font-size:9px;letter-spacing:1.2px;width:42px;flex:none}
+  .wx-row .v{color:var(--ink);width:74px;flex:none}
+  .wx-bar{flex:1;height:4px;background:rgba(255,255,255,.07);position:relative;overflow:hidden}
+  .wx-bar i{position:absolute;inset:0 auto 0 0;display:block;transition:width .5s ease}
+  #wx-windbar i{background:linear-gradient(90deg,#4c8fbe,#9fe0ff)}
+  #wx-wavebar i{background:linear-gradient(90deg,#2c6f8f,#63d6c8)}
+  /* the arrow points where the wind is actually going, relative to your heading */
+  #wx-arrow{width:20px;height:20px;flex:none;transition:transform .5s ease}
+  #wx-arrow svg{display:block}
+  #wx-sea{color:var(--faint);font-size:10px;letter-spacing:.6px}
+
   #compasswrap{top:14px;left:50%;transform:translateX(-50%);padding:5px 9px 3px}
   #compass{display:block}
 
@@ -200,6 +223,32 @@
     <dt>TILES</dt><dd id="r-tiles">—</dd>
   </dl>
 
+  <div id="wx" class="panel pending">
+    <div class="wx-top">
+      <div id="wx-temp">--<span>&deg;C</span></div>
+      <div class="wx-right">
+        <div id="wx-label">reading&hellip;</div>
+        <div id="wx-time">--:--</div>
+      </div>
+    </div>
+    <div class="wx-rows">
+      <div class="wx-row">
+        <span class="k">WIND</span>
+        <span id="wx-arrow"><svg width="20" height="20" viewBox="0 0 20 20">
+          <path d="M10 2 L14.5 17 L10 13.4 L5.5 17 Z" fill="#9fe0ff"/></svg></span>
+        <span class="v" id="wx-wind">--</span>
+        <span class="wx-bar" id="wx-windbar"><i style="width:0%"></i></span>
+      </div>
+      <div class="wx-row">
+        <span class="k">SEA</span>
+        <span id="wx-arrow2" style="width:20px;flex:none"></span>
+        <span class="v" id="wx-wave">--</span>
+        <span class="wx-bar" id="wx-wavebar"><i style="width:0%"></i></span>
+      </div>
+      <div id="wx-sea">&nbsp;</div>
+    </div>
+  </div>
+
   <div id="compasswrap" class="panel"><canvas id="compass"></canvas></div>
 
   <div id="mapwrap" class="panel">
@@ -255,6 +304,6 @@
 <script type="importmap">
 { "imports": { "three": "./vendor/three.module.js" } }
 </script>
-<script type="module" src="./src/main.js"></script>
+<script type="module" src="./src/main.js?v=de65e7b7"></script>
 </body>
 </html>

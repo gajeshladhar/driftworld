@@ -1,5 +1,5 @@
 // ── Player: speedboat constrained to the Water class, plus a free-fly mode ───
-import { BOAT, FLY, VERTICAL_EXAGGERATION } from './config.js';
+import { BOAT, FLY, VERTICAL_EXAGGERATION, WEATHER } from './config.js?v=de65e7b7';
 
 const HALF_BEAM = 5;   // metres either side of the keel used for hull clearance
 
@@ -21,6 +21,18 @@ export class Player {
     this.pitch = 0;      // +ve = nose up (rotation about X in a YXZ frame)
     this.vy = 0;         // vertical rate, fly mode
     this.grounded = false;
+    this.windX = 0; this.windZ = 0;    // world-space drift from live wind
+  }
+
+  /**
+   * Real wind, in world axes. Meteorological direction is where the wind comes
+   * FROM, so the push is 180 degrees off it.
+   */
+  setWind(speed, fromDeg) {
+    const to = ((fromDeg ?? 0) + 180) * (Math.PI / 180);
+    const v = (speed ?? 0) * WEATHER.windDrift;
+    this.windX = Math.sin(to) * v;
+    this.windZ = -Math.cos(to) * v;
   }
 
   get worldPos() { return this.frame.toWorld(this.mx, this.my); }
@@ -130,7 +142,8 @@ export class Player {
 
     const [fx, fz] = this.forward;
     const step = this.speed * dt;
-    let dx = fx * step, dz = fz * step;
+    // the hull is pushed by the actual wind at this place, right now
+    let dx = fx * step + this.windX * dt, dz = fz * step + this.windZ * dt;
 
     if (this.mode === 'fly') {
       this._apply(dx, dz);

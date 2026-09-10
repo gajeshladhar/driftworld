@@ -1,8 +1,8 @@
 // ── Terrain: DEM-displaced tile meshes textured with land cover ──────────────
 import * as THREE from 'three';
-import { ZOOM, MESH_SEG, LOAD_RADIUS, UNLOAD_RADIUS, VERTICAL_EXAGGERATION, CLASSES } from './config.js';
-import { tileBBoxMerc, tileSpanMerc, mercToTile } from './geo.js';
-import { buildProps, disposeProps } from './props.js';
+import { ZOOM, MESH_SEG, LOAD_RADIUS, UNLOAD_RADIUS, VERTICAL_EXAGGERATION, CLASSES } from './config.js?v=de65e7b7';
+import { tileBBoxMerc, tileSpanMerc, mercToTile } from './geo.js?v=de65e7b7';
+import { buildProps, disposeProps } from './props.js?v=de65e7b7';
 
 const ORDER = ['WATER','TREES','FLOODED','CROPS','BUILT','BARE','SNOW','CLOUDS','RANGELAND'];
 const SRC = ORDER.map(k => CLASSES[k].rgb.map(v => v / 255));
@@ -32,6 +32,7 @@ const FRAG = /* glsl */`
   uniform vec3  uFogColor;
   uniform vec3  uSkyTop;
   uniform float uFogNear, uFogFar, uTime;
+  uniform vec2  uSea;      // x = wave amplitude, y = time scale
   varying vec2 vUv;
   varying vec3 vNormalW;
   varying vec3 vWorld;
@@ -47,9 +48,10 @@ const FRAG = /* glsl */`
     vec2 a = vec2( 0.863,  0.505);
     vec2 b = vec2(-0.407,  0.913);
     vec2 c = vec2( 0.291, -0.957);
-    return sin(dot(p, a) * 0.0083 + t * 0.62) * 0.60
-         + sin(dot(p, b) * 0.0047 - t * 0.44) * 0.48
-         + sin(dot(p, c) * 0.0026 + t * 0.29) * 0.36;
+    float ts = t * uSea.y;
+    return (sin(dot(p, a) * 0.0083 + ts * 0.62) * 0.60
+          + sin(dot(p, b) * 0.0047 - ts * 0.44) * 0.48
+          + sin(dot(p, c) * 0.0026 + ts * 0.29) * 0.36) * uSea.x;
   }
 
   void main() {
@@ -128,11 +130,18 @@ export class Terrain {
         uFogNear:  { value: 3200 },
         uFogFar:   { value: 11000 },
         uTime:     { value: 0 },
+        uSea:      { value: new THREE.Vector2(0.9, 1.0) },
       },
     });
   }
 
   setTime(t) { for (const m of this.materials) m.uniforms.uTime.value = t; }
+
+  /** Sea state from live marine data: amplitude and wave speed. */
+  setSea(amp, speed) {
+    this.base.uniforms.uSea.value.set(amp, speed);
+    for (const m of this.materials) m.uniforms.uSea.value.set(amp, speed);
+  }
 
   /** Swap the lighting/atmosphere on every live tile material. */
   setAtmosphere(sunDir, fogColor, skyTop) {

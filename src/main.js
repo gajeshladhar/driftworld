@@ -1,19 +1,20 @@
 // ── Driftworld · main loop ──────────────────────────────────────────────────
 import * as THREE from 'three';
-import { LOCATIONS, ZOOM, CLASSES, CLASS_ORDER, BOAT, SKY, SHIP, ATMOSPHERES, RUN } from './config.js';
-import { makeFrame, lonLatToMerc, mercToLonLat, mercToTile } from './geo.js';
-import { TileStore } from './tiles.js';
-import { Terrain } from './terrain.js';
-import { Player } from './player.js';
-import { PixelPass } from './pixel.js';
-import { makeSky, HORIZON } from './sky.js';
-import { makeShip, updateShip } from './ship.js';
-import { Minimap } from './minimap.js';
-import { Nav } from './nav.js';
-import { Run } from './objectives.js';
-import { Places } from './places.js';
-import { Cinema } from './cinema.js';
-import { disposeProps } from './props.js';
+import { LOCATIONS, ZOOM, CLASSES, CLASS_ORDER, BOAT, SKY, SHIP, ATMOSPHERES, RUN, WEATHER } from './config.js?v=de65e7b7';
+import { makeFrame, lonLatToMerc, mercToLonLat, mercToTile } from './geo.js?v=de65e7b7';
+import { TileStore } from './tiles.js?v=de65e7b7';
+import { Terrain } from './terrain.js?v=de65e7b7';
+import { Player } from './player.js?v=de65e7b7';
+import { PixelPass } from './pixel.js?v=de65e7b7';
+import { makeSky, HORIZON } from './sky.js?v=de65e7b7';
+import { makeShip, updateShip } from './ship.js?v=de65e7b7';
+import { Minimap } from './minimap.js?v=de65e7b7';
+import { Nav } from './nav.js?v=de65e7b7';
+import { Run } from './objectives.js?v=de65e7b7';
+import { Places } from './places.js?v=de65e7b7';
+import { Weather } from './weather.js?v=de65e7b7';
+import { Cinema } from './cinema.js?v=de65e7b7';
+import { disposeProps } from './props.js?v=de65e7b7';
 
 const $ = (id) => document.getElementById(id);
 
@@ -117,6 +118,7 @@ class Game {
     }
 
     this.player = new Player(this.store, this.frame, spawn[0], spawn[1]);
+    if (this.weather?.data) this.player.setWind(this.weather.data.wind, this.weather.data.windDir);
     this.ship = makeShip();
     // Aircraft order: roll in local frame, pitch about the yawed lateral axis,
     // yaw about world up. With the default XYZ, pitch is applied about world X,
@@ -133,6 +135,12 @@ class Game {
 
     this.places = new Places(this.scene, this.frame, this.store);
     this.places.onRegion = (label) => this.run.toast(label.toUpperCase(), 'rank');
+
+    this.weather = new Weather();
+    this.weather.onUpdate = (w) => {
+      this.applyWeather(w);
+      this.player?.setWind(w.wind, w.windDir);
+    };
 
     this.atmo = 0;
     this.applyAtmosphere(0);
@@ -250,6 +258,36 @@ class Game {
     this.places = new Places(this.scene, this.frame, this.store);
     this.places.onRegion = (label) => this.run.toast(label.toUpperCase(), 'rank');
     this.run.energy = 100;
+  }
+
+  /** Push live conditions into the sea, the sky and the panel. */
+  applyWeather(w) {
+    const sea = this.weather.seaState();
+    this.terrain.setSea(sea.amp, sea.speed);
+    if (this.sky) this.sky.material.uniforms.uCloud.value = Math.min(1, w.cloud / 100);
+
+    const wx = $('wx');
+    wx.classList.remove('pending');
+    $('wx-temp').innerHTML = `${Math.round(w.temp)}<span>&deg;C</span>`;
+    $('wx-label').textContent = w.label.toUpperCase();
+    $('wx-time').textContent = `${w.localTime} local`;
+
+    $('wx-wind').textContent = `${w.wind.toFixed(1)} m/s`;
+    $('wx-windbar').firstElementChild.style.width = `${Math.min(100, (w.wind / 25) * 100)}%`;
+
+    if (w.wave === null) {
+      $('wx-wave').textContent = 'inland';
+      $('wx-wavebar').firstElementChild.style.width = '0%';
+      $('wx-sea').textContent = w.gust > w.wind * 1.4
+        ? `gusting ${w.gust.toFixed(0)} m/s` : ' ';
+    } else {
+      $('wx-wave').textContent = `${w.wave.toFixed(2)} m`;
+      $('wx-wavebar').firstElementChild.style.width =
+        `${Math.min(100, (w.wave / 6) * 100)}%`;
+      $('wx-sea').textContent =
+        `swell ${w.wavePeriod ? w.wavePeriod.toFixed(1) + ' s' : '--'} from ${Math.round(w.waveDir ?? 0)}°`;
+    }
+    this.wxWindDir = w.windDir;
   }
 
   applyAtmosphere(i) {
@@ -457,6 +495,8 @@ class Game {
       this.updateTargetArrow(target);
       this.places.maybeRefresh(p);   // self-debounced by distance and elapsed time
       this.places.update(p);
+      const [wlon, wlat] = mercToLonLat(p.mx, p.my);
+      this.weather.maybeFetch(wlat, wlon);
     }
 
     if (this.cinema) this.cinema.postRender();
@@ -496,6 +536,12 @@ class Game {
     $('r-tiles').textContent = `${s.loaded} loaded · ${s.queued} queued`
       + `${s.failed ? ` · ${s.failed} failed` : ''} · ${this.places.labels.length} places`;
     $('r-sky').textContent = this.atmoName;
+    if (this.wxWindDir !== undefined) {
+      // meteorological direction is where wind comes FROM; +180 to point downwind,
+      // then subtract heading so the arrow reads relative to the nose
+      const rel = this.wxWindDir + 180 - p.heading * DEG;
+      $('wx-arrow').style.transform = `rotate(${rel}deg)`;
+    }
     $('r-region').textContent = this.places.region?.label ?? 'locating…';
     const warnEl = $('warn');
     if (run.powerless) {
