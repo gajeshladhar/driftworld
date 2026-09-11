@@ -9,7 +9,7 @@
 // because a flat sheet seen edge-on is a razor line across the screen — that
 // fade is what turns "a plane at 2600 m" into "passing through cloud".
 import * as THREE from 'three';
-import { CLOUDS } from './config.js?v=969ac6ad';
+import { CLOUDS } from './config.js?v=3adea2fa';
 
 const VERT = /* glsl */`
   varying vec3 vWorld;

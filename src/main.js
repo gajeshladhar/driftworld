@@ -1,21 +1,21 @@
 // ── Driftworld · main loop ──────────────────────────────────────────────────
 import * as THREE from 'three';
-import { LOCATIONS, ZOOM, CLASSES, CLASS_ORDER, BOAT, SKY, SHIP, ATMOSPHERES, RUN, WEATHER } from './config.js?v=969ac6ad';
-import { makeFrame, lonLatToMerc, mercToLonLat, mercToTile } from './geo.js?v=969ac6ad';
-import { TileStore } from './tiles.js?v=969ac6ad';
-import { Terrain } from './terrain.js?v=969ac6ad';
-import { Player } from './player.js?v=969ac6ad';
-import { PixelPass } from './pixel.js?v=969ac6ad';
-import { makeSky, HORIZON } from './sky.js?v=969ac6ad';
-import { makeShip, updateShip } from './ship.js?v=969ac6ad';
-import { Minimap } from './minimap.js?v=969ac6ad';
-import { Nav } from './nav.js?v=969ac6ad';
-import { Run } from './objectives.js?v=969ac6ad';
-import { Places } from './places.js?v=969ac6ad';
-import { Weather } from './weather.js?v=969ac6ad';
-import { Clouds } from './clouds.js?v=969ac6ad';
-import { Cinema } from './cinema.js?v=969ac6ad';
-import { disposeProps } from './props.js?v=969ac6ad';
+import { LOCATIONS, ZOOM, CLASSES, CLASS_ORDER, BOAT, SKY, SHIP, ATMOSPHERES, RUN, WEATHER } from './config.js?v=3adea2fa';
+import { makeFrame, lonLatToMerc, mercToLonLat, mercToTile } from './geo.js?v=3adea2fa';
+import { TileStore } from './tiles.js?v=3adea2fa';
+import { Terrain } from './terrain.js?v=3adea2fa';
+import { Player } from './player.js?v=3adea2fa';
+import { PixelPass } from './pixel.js?v=3adea2fa';
+import { makeSky, HORIZON } from './sky.js?v=3adea2fa';
+import { makeShip, updateShip } from './ship.js?v=3adea2fa';
+import { Minimap } from './minimap.js?v=3adea2fa';
+import { Nav } from './nav.js?v=3adea2fa';
+import { Run } from './objectives.js?v=3adea2fa';
+import { Places } from './places.js?v=3adea2fa';
+import { Weather } from './weather.js?v=3adea2fa';
+import { Clouds } from './clouds.js?v=3adea2fa';
+import { Cinema } from './cinema.js?v=3adea2fa';
+import { disposeProps } from './props.js?v=3adea2fa';
 
 const $ = (id) => document.getElementById(id);
 

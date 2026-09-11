@@ -29,8 +29,10 @@
   /* ---------- boot ---------- */
   #boot{position:fixed;inset:0;display:grid;place-items:center;z-index:20;
         background:radial-gradient(125% 95% at 50% -10%,#2b4d6b 0%,#0a1420 55%,#060b12 100%)}
-  #boot .wrap{width:min(600px,93vw);padding:30px 32px;border:1px solid var(--edge);
-        background:rgba(6,13,21,.82)}
+  #boot .wrap{width:min(920px,95vw);max-height:92vh;overflow:auto;padding:30px 34px;
+        border:1px solid var(--edge);background:rgba(6,13,21,.86)}
+  .boot-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:36px;align-items:start}
+  @media (max-width:860px){.boot-grid{grid-template-columns:1fr}}
   h1{margin:0;font-size:34px;letter-spacing:9px;font-weight:700;line-height:1}
   h1 span{color:var(--accent)}
   .tag{margin:9px 0 22px;color:var(--dim);letter-spacing:.4px}
@@ -41,6 +43,42 @@
   #locs button:hover{background:rgba(56,232,255,.11);border-color:var(--accent)}
   #locs button.on{background:rgba(56,232,255,.17);border-color:var(--accent)}
   #locs small{color:var(--faint)}
+
+  /* ---------- flight controls panel ---------- */
+  .rig{display:flex;flex-direction:column;align-items:center;gap:18px;
+       padding-top:2px}
+  .ship-badge{width:150px;height:150px}
+  .ship-badge .hull{fill:#232c42;stroke:rgba(150,190,220,.35);stroke-width:1.5}
+  .ship-badge .trim{fill:#4a5a78}
+  .ship-badge .front{stroke:var(--accent);stroke-width:2.4;filter:drop-shadow(0 0 4px rgba(56,232,255,.65))}
+  .ship-badge .chevron{fill:var(--accent);opacity:.9;filter:drop-shadow(0 0 5px rgba(56,232,255,.6))}
+  .ship-badge .engine{fill:var(--hot,#ff5bc8);opacity:.85;filter:drop-shadow(0 0 6px rgba(255,91,200,.7))}
+  .ship-badge .plume{fill:var(--hot,#ff5bc8);opacity:.35}
+
+  .keycluster{display:grid;gap:7px;justify-items:center}
+  .krow{display:flex;gap:7px}
+  .key{position:relative;min-width:40px;height:40px;display:flex;align-items:center;justify-content:center;
+       border-radius:7px;font:600 13px ui-monospace,monospace;color:var(--ink);
+       background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.01));
+       border:1px solid rgba(150,190,220,.22);
+       box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 2px 0 rgba(0,0,0,.35)}
+  .key.wide{min-width:172px}
+  .key.ghost{opacity:.55;min-width:34px;height:34px;font-size:11px}
+  .key.hot{border-color:var(--accent);color:var(--accent);
+       background:linear-gradient(180deg,rgba(56,232,255,.16),rgba(56,232,255,.03));
+       box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 0 10px rgba(56,232,255,.35),0 2px 0 rgba(0,0,0,.35)}
+  .key.gold{border-color:var(--gold);color:var(--gold);
+       background:linear-gradient(180deg,rgba(255,210,74,.16),rgba(255,210,74,.03));
+       box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 0 10px rgba(255,210,74,.30),0 2px 0 rgba(0,0,0,.35)}
+  .keylabel{font-size:9px;letter-spacing:1px;color:var(--faint);text-align:center;margin-top:2px}
+  .keymap-title{font-size:10px;letter-spacing:2.5px;color:var(--dim);text-align:center;margin-top:6px}
+  .keymap-title b{color:var(--accent)}
+
+  .secondary-keys{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;
+       margin-top:4px;padding-top:14px;border-top:1px solid var(--edge);width:100%}
+  .secondary-keys .item{display:flex;flex-direction:column;align-items:center;gap:5px}
+  .secondary-keys .item span{font-size:9px;color:var(--faint);letter-spacing:.6px;white-space:nowrap}
+
   .or{display:flex;align-items:center;gap:10px;color:var(--faint);font-size:10px;
         letter-spacing:2px;margin:16px 0 11px}
   .or::before,.or::after{content:"";flex:1;height:1px;background:var(--edge)}
@@ -183,35 +221,67 @@
 <div id="boot">
   <div class="wrap">
     <h1>DRIFT<span>WORLD</span></h1>
-    <p class="tag">Survey the real Earth. Water is where the satellite says it is —
-       Fly as far as you can without hitting it.</p>
-    <div id="locs"></div>
-    <div class="or">OR ENTER COORDINATES</div>
-    <div id="custom">
-      <input id="lat" type="text" inputmode="decimal" placeholder="latitude   e.g. 20.9101" />
-      <input id="lon" type="text" inputmode="decimal" placeholder="longitude  e.g. 107.1839" />
-      <button id="go">LAUNCH</button>
+    <p class="tag">Fly as far as you can over the real Earth. Terrain, forest and
+       buildings are all real — hit one and it costs a life.</p>
+
+    <div class="boot-grid">
+      <div class="boot-left">
+        <div id="locs"></div>
+        <div class="or">OR ENTER COORDINATES</div>
+        <div id="custom">
+          <input id="lat" type="text" inputmode="decimal" placeholder="latitude   e.g. 20.9101" />
+          <input id="lon" type="text" inputmode="decimal" placeholder="longitude  e.g. 107.1839" />
+          <button id="go">LAUNCH</button>
+        </div>
+        <p id="status">Loading…</p>
+        <div class="brief">
+          <b>Fly as far as you can.</b> Distance is the score. You never land: the
+          only thing that stops you is hitting something. Every impact costs one of
+          <b>nine lives</b>, and <b>life cells</b> drift in open air to give one back.
+        </div>
+        <p class="src">
+          Land cover &middot; ESRI / Impact Observatory Sentinel-2 10 m annual LULC<br>
+          Elevation &middot; Mapzen / AWS Terrarium 30 m DEM
+        </p>
+      </div>
+
+      <div class="boot-right">
+        <div class="rig">
+          <svg class="ship-badge" viewBox="0 0 120 130">
+            <polygon class="hull" points="60,6 74,44 84,72 68,84 68,100 60,112 52,100 52,84 36,72 46,44"/>
+            <polygon class="chevron" points="60,20 68,42 60,36 52,42"/>
+            <line class="front" x1="46" y1="44" x2="36" y2="72"/>
+            <line class="front" x1="74" y1="44" x2="84" y2="72"/>
+            <circle class="engine" cx="44" cy="88" r="7"/>
+            <circle class="engine" cx="76" cy="88" r="7"/>
+            <polygon class="plume" points="44,95 38,116 44,110 50,116"/>
+            <polygon class="plume" points="76,95 70,116 76,110 82,116"/>
+          </svg>
+
+          <div class="keymap-title">FLIGHT CONTROLS &mdash; <b>4</b> KEYS TO FLY</div>
+
+          <div class="keycluster">
+            <div class="krow"><div class="key hot">W</div></div>
+            <div class="krow">
+              <div class="key hot">A</div><div class="key hot">S</div><div class="key hot">D</div>
+            </div>
+            <div class="krow"><div class="key gold wide">SPACE</div></div>
+            <div class="krow"><div class="key gold wide">Ctrl</div></div>
+          </div>
+          <div class="keylabel">
+            W thrust &nbsp;&middot;&nbsp; A / D steer &nbsp;&middot;&nbsp; S brake<br>
+            SPACE climb &nbsp;&middot;&nbsp; Ctrl dive &mdash; fly too high, dive back down
+          </div>
+
+          <div class="secondary-keys">
+            <div class="item"><div class="key ghost">Shift</div><span>BOOST</span></div>
+            <div class="item"><div class="key ghost">G</div><span>PULL&nbsp;UP</span></div>
+            <div class="item"><div class="key ghost">M</div><span>CHART</span></div>
+            <div class="item"><div class="key ghost">T</div><span>SKY</span></div>
+          </div>
+        </div>
+      </div>
     </div>
-    <p id="status">Loading…</p>
-    <div class="brief">
-      <b>Fly as far as you can.</b> Distance is the score. You never land: the only
-      thing that stops you is hitting something — a ridge, a forest canopy, a tower
-      block. Every impact costs one of <b>nine lives</b>, and <b>life cells</b> drift in
-      open air along the way to give one back.<br>
-      <span class="k">W</span>/<span class="k">&uarr;</span> thrust &nbsp;
-      <span class="k">S</span> brake &nbsp;
-      <span class="k">A</span>/<span class="k">D</span> steer &nbsp;
-      <span class="k">Shift</span> boost<br>
-      <span class="k">Space</span> climb &nbsp;
-      <span class="k">Ctrl</span> dive &nbsp;
-      <span class="k">G</span> emergency pull-up &nbsp;
-      <span class="k">T</span> time of day &nbsp;
-      <span class="k">M</span> chart
-    </div>
-    <p class="src">
-      Land cover &middot; ESRI / Impact Observatory Sentinel-2 10 m annual LULC<br>
-      Elevation &middot; Mapzen / AWS Terrarium 30 m DEM
-    </p>
   </div>
 </div>
 
@@ -310,6 +380,6 @@
 <script type="importmap">
 { "imports": { "three": "./vendor/three.module.js" } }
 </script>
-<script type="module" src="./src/main.js?v=969ac6ad"></script>
+<script type="module" src="./src/main.js?v=3adea2fa"></script>
 </body>
 </html>
